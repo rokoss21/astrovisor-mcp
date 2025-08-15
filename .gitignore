@@ -53,7 +53,6 @@ tmp/
 temp/
 
 # Package-lock (if using yarn)
-package-lock.json
 
 # Local config files
 server-config.json
