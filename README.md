@@ -5,7 +5,6 @@ Professional astrology tools for Claude Desktop via the Model Context Protocol (
 [![npm version](https://badge.fury.io/js/astrovisor-mcp.svg)](https://badge.fury.io/js/astrovisor-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Created by [Emil Rokossovskiy](https://github.com/rokoss21/)**
 
 ## 🚀 Quick Start
 
@@ -173,8 +172,8 @@ Headers: Authorization: Bearer your-api-key
 
 - **Website**: [astrovisor.io](https://astrovisor.io)
 - **API Documentation**: [astrovisor.io/docs](https://astrovisor.io/docs)
-- **GitHub Issues**: [github.com/astrovisor/mcp-server/issues](https://github.com/astrovisor/mcp-server/issues)
-- **Email**: support@astrocore.api
+- **GitHub Issues**: [github.com/rokoss21/astrovisor-mcp/issues](https://github.com/rokoss21/astrovisor-mcp/issues)
+- **Email**: support@astrovisor.io
 
 ## 📄 License
 

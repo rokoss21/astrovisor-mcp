@@ -38,16 +38,16 @@
   "author": {
     "name": "Emil Rokossovskiy",
     "url": "https://github.com/rokoss21/",
-    "email": "support@astrocore.api"
+    "email": "support@astrovisor.io"
   },
   "license": "MIT",
   "homepage": "https://astrovisor.io",
   "repository": {
     "type": "git",
-    "url": "https://github.com/astrovisor/mcp-server"
+    "url": "https://github.com/rokoss21/astrovisor-mcp"
   },
   "bugs": {
-    "url": "https://github.com/astrovisor/mcp-server/issues"
+    "url": "https://github.com/rokoss21/astrovisor-mcp/issues"
   },
   "engines": {
     "node": ">=18.0.0"
