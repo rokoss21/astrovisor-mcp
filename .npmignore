@@ -1,0 +1,50 @@
+# Source files (compiled code in build/ will be included)
+src/
+*.ts
+
+# Development files
+.git/
+.gitignore
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+test/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temporary files
+*.tmp
+*.temp
+backup/
+*.backup
+
+# Development configs that users don't need
+ecosystem.config.*
+tsconfig.json
+package.json.backup
+src/*.backup
+claude_desktop_config*.json
+CLAUDE_DESKTOP_SETUP.md
+FINAL_USER_GUIDE.md
+MCP_SETUP_GUIDE.md
+*.md.backup

@@ -1,0 +1,64 @@
+{
+  "name": "astrovisor-mcp",
+  "version": "1.0.0",
+  "description": "Astrovisor MCP Server - Professional astrology tools for Claude Desktop via MCP protocol. Created by Emil Rokossovskiy.",
+  "type": "module",
+  "main": "build/index.js",
+  "bin": {
+    "astrovisor-mcp": "build/index.js"
+  },
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "build-http": "tsc src/http-server.ts --outDir build --target es2022 --module nodenext --moduleResolution nodenext --esModuleInterop && chmod +x build/http-server.js",
+    "build-mcp-http": "tsc src/mcp-http-server.ts --outDir build --target es2022 --module nodenext --moduleResolution nodenext --esModuleInterop && chmod +x build/mcp-http-server.js",
+    "dev": "tsc --watch",
+    "start": "node build/index.js",
+    "prepare": "npm run build",
+    "test": "echo \"Tests will be added soon\" && exit 0"
+  },
+  "files": [
+    "build/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "mcp",
+    "astrology",
+    "claude",
+    "ai",
+    "numerology", 
+    "vedic-astrology",
+    "natal-chart",
+    "horoscope",
+    "astrovisor",
+    "human-design",
+    "tarot",
+    "astrocartography"
+  ],
+  "author": {
+    "name": "Emil Rokossovskiy",
+    "url": "https://github.com/rokoss21/",
+    "email": "support@astrocore.api"
+  },
+  "license": "MIT",
+  "homepage": "https://astrovisor.io",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/astrovisor/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/astrovisor/mcp-server/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "axios": "^1.6.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
