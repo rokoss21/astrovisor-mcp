@@ -79,15 +79,6 @@ Then use in Claude Desktop config:
   - Returns: Progressed planets, aspects to natal chart
 
 - **calculate_directions** - Solar arc directions
-
-- **calculate_transits** - Planetary transits to natal chart
-  - Parameters: Birth data + `target_date`, `orb_factor`, `min_significance`
-  - Returns: Transit aspects, planetary returns, period tension analysis, detailed interpretations
-  - Features: All 10 planets, 10 aspect types, significance scoring, period recommendations
-
-- **calculate_transits** - Транзиты планет к натальной карте
-  - Parameters: Birth data + `target_date`, `orb_factor`, `min_significance`
-  - Returns: Транзитные аспекты, планетарные возвращения, анализ периода
   - Parameters: Birth data + `target_date` 
   - Returns: Directed planets, activation dates
 
@@ -206,35 +197,3 @@ Professional developer specializing in AI integrations and astrological software
 ---
 
 **Get your API key at [astrovisor.io](https://astrovisor.io) and start exploring professional astrology with Claude!** 🌟
-
-## 🌟 NEW: Transits Analysis v1.1.0
-
-### Transit Calculation Features:
-- **Comprehensive Transit Analysis**: All major and minor aspects to natal planets
-- **Planetary Returns Detection**: Automatic detection of planetary returns with precision
-- **Period Tension Scoring**: Algorithmic assessment of challenging vs harmonious influences  
-- **Significance Rating**: Smart filtering of the most important transits
-- **Duration Estimates**: How long each transit influence will last
-- **Detailed Interpretations**: Rich astrological meanings for every transit
-
-### Supported Planets & Weights:
-- **Personal Planets**: Sun (1.0), Moon (0.6), Mercury (0.4), Venus (0.5), Mars (0.7)
-- **Social Planets**: Jupiter (1.2), Saturn (1.3) 
-- **Outer Planets**: Uranus (1.1), Neptune (1.1), Pluto (1.2)
-
-### Example Transit Analysis:
-```bash
-# Ask Claude: "Calculate my transits for August 15, 2024"
-# Returns:
-# - 15 significant transits with interpretations
-# - 3 planetary returns detected
-# - Period tension score: +1.2 (moderately challenging)
-# - Recommendations based on dominant themes
-```
-
-### Advanced Transit Features:
-- **Customizable Orbs**: Adjust aspect orb sensitivity (0.1x to 3.0x)
-- **Significance Filtering**: Focus on most important transits (0.0 to 1.0 scale)
-- **Aspect Types**: Major (conjunction, opposition, square, trine, sextile) + minor aspects
-- **Smart Returns**: Detects when planets return to natal positions within 2° orb
-- **Tension Analysis**: Evaluates overall challenging vs supportive planetary climate

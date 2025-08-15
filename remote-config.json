@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "predict-cli-server-remote": {
+      "command": "ssh",
+      "args": [
+        "-o", "StrictHostKeyChecking=no",
+        "-i", "~/.ssh/id_rsa",
+        "root@202.71.15.202",
+        "node /root/astrovisor-mcp/build/index.js"
+      ],
+      "env": {
+        "PREDICT_CLI_API_KEY": "pk-_sOoRSMnb3YGXNo-f2SxsP3jFws.4k5ScYi9Th9fw5u5kjpvXD0YaGyxx32-GW6n2NRm9Eg",
+        "PREDICT_CLI_API_URL": "http://127.0.0.1:8002"
+      }
+    }
+  }
+}

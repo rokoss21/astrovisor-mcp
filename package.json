@@ -1,7 +1,7 @@
 {
   "name": "astrovisor-mcp",
-  "version": "1.0.0",
-  "description": "Astrovisor MCP Server - Professional astrology tools for Claude Desktop via MCP protocol. Created by Emil Rokossovskiy.",
+  "version": "1.1.4",
+  "description": "Astrovisor MCP Server - Professional astrology tools for Claude Desktop via MCP protocol. Now with Transits! Created by Emil Rokossovskiy.",
   "type": "module",
   "main": "build/index.js",
   "bin": {

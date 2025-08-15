@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "astrovisor": {
+      "command": "node",
+      "args": ["./build/index.js"],
+      "env": {
+        "PREDICT_CLI_API_KEY": "ВАШ_API_КЛЮЧ_ЗДЕСЬ",
+        "PREDICT_CLI_API_URL": "https://astrovisor.io"
+      }
+    }
+  }
+}

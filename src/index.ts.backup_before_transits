@@ -7,7 +7,7 @@ import axios from 'axios';
 
 // Получаем API ключ из переменных окружения
 const API_KEY = process.env.ASTROVISOR_API_KEY;
-const API_BASE_URL = process.env.ASTROVISOR_URL || 'https://astrovisor.io';
+const API_BASE_URL = process.env.ASTROVISOR_URL || 'http://127.0.0.1:8003';
 
 if (!API_KEY) {
   throw new Error('ASTROVISOR_API_KEY environment variable is required');
@@ -265,25 +265,6 @@ const tools = [
       properties: {},
       required: []
     }
-  },
-  {
-    name: "calculate_transits",
-    description: "Рассчитывает транзиты планет к натальной карте",
-    inputSchema: {
-      type: "object",
-      properties: {
-        name: { type: "string", description: "Имя человека" },
-        birth_datetime: { type: "string", description: "Дата и время рождения в формате ISO" },
-        birth_latitude: { type: "number", description: "Широта места рождения" },
-        birth_longitude: { type: "number", description: "Долгота места рождения" },
-        birth_location: { type: "string", description: "Место рождения" },
-        birth_timezone: { type: "string", description: "Часовой пояс рождения" },
-        target_date: { type: "string", description: "Дата для расчета транзитов" },
-        orb_factor: { type: "number", description: "Множитель орбов (по умолчанию 1.0)" },
-        min_significance: { type: "number", description: "Минимальная значимость транзитов (по умолчанию 0.5)" }
-      },
-      required: ["name", "birth_datetime", "birth_latitude", "birth_longitude", "birth_location", "birth_timezone", "target_date"]
-    }
   }
 ];
 
@@ -524,27 +505,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ],
         };
 
-
-      case "calculate_transits":
-        const transitsResponse = await apiClient.post("/api/transits/calculate", {
-          name: args.name,
-          birth_datetime: args.birth_datetime,
-          birth_latitude: args.birth_latitude,
-          birth_longitude: args.birth_longitude,
-          birth_location: args.birth_location,
-          birth_timezone: args.birth_timezone,
-          target_date: args.target_date,
-          orb_factor: args.orb_factor || 1.0,
-          min_significance: args.min_significance || 0.5
-        });
-        return {
-          content: [
-            {
-              type: "text",
-              text: `🌟 Транзиты на ${args.target_date} для ${args.name}\\n\\n${JSON.stringify(transitsResponse.data, null, 2)}`,
-            },
-          ],
-        };
       case "check_api_health":
         const healthResponse = await apiClient.get('/health');
         return {
