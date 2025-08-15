@@ -90,7 +90,7 @@ Then use in Claude Desktop config:
 
 - **calculate_transits** - Транзиты планет к натальной карте
   - Parameters: Birth data + `target_date`, `orb_factor`, `min_significance`
-  - Returns: Транзитные аспекты, планетарные возвращения, анализ периода
+  - Returns: Transiting aspects, planetary returns, period analysis
   - Parameters: Birth data + `target_date` 
   - Returns: Directed planets, activation dates
 
