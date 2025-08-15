@@ -2,6 +2,9 @@
 
 Professional astrology tools for Claude Desktop via the Model Context Protocol (MCP).
 
+🆕 **NEW in v1.1.4**: Added **Planetary Transits** analysis with 10 planets, 10 aspect types, and detailed interpretations!
+
+
 [![npm version](https://badge.fury.io/js/astrovisor-mcp.svg)](https://badge.fury.io/js/astrovisor-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -17,7 +20,7 @@ Add to your Claude Desktop config:
   "mcpServers": {
     "astrovisor": {
       "command": "npx",
-      "args": ["-y", "astrovisor-mcp"],
+      "args": ["-y", "astrovisor-mcp@1.1.4"],
       "env": {
         "ASTROVISOR_API_KEY": "your-api-key-here",
         "ASTROVISOR_URL": "https://astrovisor.io"
@@ -39,7 +42,7 @@ Then use in Claude Desktop config:
 {
   "mcpServers": {
     "astrovisor": {
-      "command": "astrovisor-mcp",
+      "command": "astrovisor-mcp@1.1.4",
       "env": {
         "ASTROVISOR_API_KEY": "your-api-key-here",
         "ASTROVISOR_URL": "https://astrovisor.io"
