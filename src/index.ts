@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -56,7 +57,7 @@ const progressionDataSchema = {
 const server = new Server(
   {
     name: "astrovisor-complete-server",
-    version: "2.3.0"
+    version: "2.3.1"
   },
   {
     capabilities: {
