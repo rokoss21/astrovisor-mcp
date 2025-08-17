@@ -6,11 +6,11 @@ import axios from 'axios';
 import 'dotenv/config';
 
 // API Configuration
-const API_BASE_URL = process.env.ASTRO_API_BASE_URL || 'http://localhost:8000';
-const API_KEY = process.env.ASTRO_API_KEY || '';
+const API_BASE_URL = process.env.ASTROVISOR_URL || process.env.ASTRO_API_BASE_URL || 'https://astrovisor.io';
+const API_KEY = process.env.ASTROVISOR_API_KEY || process.env.ASTRO_API_KEY || '';
 
 if (!API_KEY) {
-  throw new Error('ASTRO_API_KEY environment variable is required');
+  throw new Error('ASTROVISOR_API_KEY or ASTRO_API_KEY environment variable is required');
 }
 
 // API Client
@@ -57,7 +57,7 @@ const progressionDataSchema = {
 const server = new Server(
   {
     name: "astrovisor-complete-server",
-    version: "2.3.1"
+    version: "2.3.2"
   },
   {
     capabilities: {
