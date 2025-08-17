@@ -24,7 +24,7 @@ const apiClient = axios.create({
 
 const server = new Server({
   name: "astrovisor-complete-server",
-  version: "2.2.0"
+  version: "2.2.3"
 }, {
   capabilities: {
     tools: {}
@@ -101,7 +101,7 @@ const tools = [
       type: "object",
       properties: {
         ...birthDataSchema,
-        transit_date: { type: "string", description: "Date for transit analysis (optional)" }
+        target_date: { type: "string", description: "Date for transit analysis (YYYY-MM-DD format). Defaults to today if not specified." }
       },
       required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
     }
@@ -300,8 +300,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         requestData = args;
         break;
       case "calculate_transits":
-        endpoint = '/api/natal/transits';
-        requestData = args;
+        endpoint = '/api/transits/calculate';
+        // Transform data for transits API
+        requestData = {
+          name: args.name,
+          birth_datetime: args.datetime,
+          birth_latitude: args.latitude,
+          birth_longitude: args.longitude,
+          birth_location: args.location,
+          birth_timezone: args.timezone,
+          target_date: args.target_date || new Date().toISOString().split('T')[0], // Default to today
+          orb_factor: 1.0,
+          min_significance: 0.3
+        };
         break;
 
       // Complete BaZi System (15 tools)
