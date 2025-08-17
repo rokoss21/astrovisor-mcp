@@ -50,25 +50,21 @@ const progressionDataSchema = {
   longitude: { type: "number", description: "Birth longitude", example: 82.9357 },
   location: { type: "string", description: "Birth location", example: "Novosibirsk, Russia" },
   timezone: { type: "string", description: "Timezone", example: "Asia/Novosibirsk" },
-  progression_date: { type: "string", description: "Progression date (YYYY-MM-DD)", example: "2024-07-12" }
+  progression_date: { type: "string", description: "Date for progression analysis (YYYY-MM-DD)", example: "2024-01-15" }
 };
 
-// Server setup
-const server = new Server(
-  {
-    name: "astrovisor-complete-server",
-    version: "2.3.3"
-  },
-  {
-    capabilities: {
-      tools: {}
-    }
+const server = new Server({
+  name: 'astrovisor-mcp',
+  version: '2.4.0',
+}, {
+  capabilities: {
+    tools: {}
   }
-);
+});
 
-// Tool definitions
+// Define tools array
 const tools = [
-  // === CORE ASTROLOGY ===
+  // === NATAL ASTROLOGY ===
   {
     name: "calculate_natal_chart",
     description: "🌟 Calculate comprehensive natal (birth) chart with planets, houses, aspects, and personality analysis",
@@ -79,6 +75,17 @@ const tools = [
     }
   },
   {
+    name: "get_natal_info",
+    description: "ℹ️ Get comprehensive information about natal astrology module",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+
+  // === VEDIC ASTROLOGY (JYOTISH) ===
+  {
     name: "calculate_vedic_chart",
     description: "🕉️ Calculate Vedic (Jyotish) astrology chart with divisional charts and dasha periods",
     inputSchema: {
@@ -88,42 +95,47 @@ const tools = [
     }
   },
   {
-    name: "calculate_human_design",
-    description: "⚡ Calculate Human Design chart with type, strategy, authority, and profile analysis",
+    name: "get_vedic_info",
+    description: "ℹ️ Get information about Vedic astrology and its methods",
     inputSchema: {
       type: "object",
-      properties: birthDataSchema,
-      required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
+      properties: {},
+      required: []
     }
   },
+
+  // === SOLAR RETURNS ===
   {
-    name: "calculate_numerology",
-    description: "🔢 Calculate comprehensive numerology analysis with life path, destiny, and personal year numbers",
-    inputSchema: {
-      type: "object",
-      properties: birthDataSchema,
-      required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
-    }
-  },
-  {
-    name: "calculate_matrix_of_destiny",
-    description: "🎭 Calculate Matrix of Destiny with 22 archetypes analysis for life purpose insights",
-    inputSchema: {
-      type: "object",
-      properties: birthDataSchema,
-      required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
-    }
-  },
-  {
-    name: "calculate_transits",
-    description: "🌍 Calculate current planetary transits and their aspects to natal chart",
+    name: "calculate_solar_return",
+    description: "☀️ Calculate Solar Return chart for yearly forecast and life themes",
     inputSchema: {
       type: "object",
       properties: {
         ...birthDataSchema,
-        target_date: { type: "string", description: "Date for transit analysis (YYYY-MM-DD)", example: "2024-01-15" }
+        return_year: { type: "number", description: "Year for solar return calculation", example: 2024 }
       },
-      required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "return_year"]
+    }
+  },
+  {
+    name: "calculate_lunar_return",
+    description: "🌙 Calculate Lunar Return chart for monthly cycles and emotional patterns",
+    inputSchema: {
+      type: "object",
+      properties: {
+        ...birthDataSchema,
+        return_date: { type: "string", description: "Date for lunar return calculation (YYYY-MM-DD)", example: "2024-01-15" }
+      },
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "return_date"]
+    }
+  },
+  {
+    name: "get_solar_info",
+    description: "ℹ️ Get information about solar and lunar returns",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: []
     }
   },
 
@@ -160,10 +172,7 @@ const tools = [
     description: "⚖️ Compare different progression methods (secondary, solar arc, tertiary) for comprehensive analysis",
     inputSchema: {
       type: "object",
-      properties: {
-        ...progressionDataSchema,
-        compare_methods: { type: "array", items: { type: "string" }, description: "Methods to compare", example: ["secondary", "solar_arc"] }
-      },
+      properties: progressionDataSchema,
       required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "progression_date"]
     }
   },
@@ -195,7 +204,258 @@ const tools = [
     }
   },
 
-  // === BAZI (Chinese Astrology) ===
+  // === DIRECTIONS ===
+  {
+    name: "calculate_directions",
+    description: "🎯 Calculate solar arc directions for timing major life events",
+    inputSchema: {
+      type: "object",
+      properties: progressionDataSchema,
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "progression_date"]
+    }
+  },
+  {
+    name: "get_directions_info",
+    description: "ℹ️ Get information about solar arc directions and timing techniques",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+
+  // === RELATIONSHIP ANALYSIS ===
+  {
+    name: "analyze_synastry",
+    description: "💕 Analyze synastry between two people for relationship compatibility",
+    inputSchema: {
+      type: "object",
+      properties: {
+        person1_name: { type: "string", description: "First person's name" },
+        person1_datetime: { type: "string", description: "First person's birth datetime" },
+        person1_latitude: { type: "number", description: "First person's birth latitude" },
+        person1_longitude: { type: "number", description: "First person's birth longitude" },
+        person1_location: { type: "string", description: "First person's birth location" },
+        person1_timezone: { type: "string", description: "First person's timezone" },
+        person2_name: { type: "string", description: "Second person's name" },
+        person2_datetime: { type: "string", description: "Second person's birth datetime" },
+        person2_latitude: { type: "number", description: "Second person's birth latitude" },
+        person2_longitude: { type: "number", description: "Second person's birth longitude" },
+        person2_location: { type: "string", description: "Second person's birth location" },
+        person2_timezone: { type: "string", description: "Second person's timezone" }
+      },
+      required: ["person1_name", "person1_datetime", "person1_latitude", "person1_longitude", "person1_location", "person1_timezone", "person2_name", "person2_datetime", "person2_latitude", "person2_longitude", "person2_location", "person2_timezone"]
+    }
+  },
+  {
+    name: "calculate_composite_chart",
+    description: "🤝 Calculate composite chart for relationship analysis",
+    inputSchema: {
+      type: "object",
+      properties: {
+        person1_name: { type: "string", description: "First person's name" },
+        person1_datetime: { type: "string", description: "First person's birth datetime" },
+        person1_latitude: { type: "number", description: "First person's birth latitude" },
+        person1_longitude: { type: "number", description: "First person's birth longitude" },
+        person1_location: { type: "string", description: "First person's birth location" },
+        person1_timezone: { type: "string", description: "First person's timezone" },
+        person2_name: { type: "string", description: "Second person's name" },
+        person2_datetime: { type: "string", description: "Second person's birth datetime" },
+        person2_latitude: { type: "number", description: "Second person's birth latitude" },
+        person2_longitude: { type: "number", description: "Second person's birth longitude" },
+        person2_location: { type: "string", description: "Second person's birth location" },
+        person2_timezone: { type: "string", description: "Second person's timezone" }
+      },
+      required: ["person1_name", "person1_datetime", "person1_latitude", "person1_longitude", "person1_location", "person1_timezone", "person2_name", "person2_datetime", "person2_latitude", "person2_longitude", "person2_location", "person2_timezone"]
+    }
+  },
+  {
+    name: "get_relationships_info",
+    description: "ℹ️ Get information about relationship analysis methods",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+
+  // === ASTROCARTOGRAPHY ===
+  {
+    name: "calculate_astrocartography_map",
+    description: "🗺️ Generate astrocartography world map with planetary lines",
+    inputSchema: {
+      type: "object",
+      properties: birthDataSchema,
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
+    }
+  },
+  {
+    name: "find_best_locations",
+    description: "📍 Find best places in the world based on astrocartography",
+    inputSchema: {
+      type: "object",
+      properties: {
+        ...birthDataSchema,
+        purpose: { type: "string", description: "Purpose for location search", example: "career" }
+      },
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
+    }
+  },
+  {
+    name: "get_astrocartography_info",
+    description: "ℹ️ Get information about astrocartography and relocation astrology",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+
+  // === ELECTIONAL ASTROLOGY ===
+  {
+    name: "find_best_times",
+    description: "⏰ Find optimal times for important activities using electional astrology",
+    inputSchema: {
+      type: "object",
+      properties: {
+        ...birthDataSchema,
+        activity: { type: "string", description: "Type of activity", example: "wedding" },
+        start_date: { type: "string", description: "Search start date (YYYY-MM-DD)" },
+        end_date: { type: "string", description: "Search end date (YYYY-MM-DD)" }
+      },
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "activity", "start_date", "end_date"]
+    }
+  },
+  {
+    name: "get_electional_info",
+    description: "ℹ️ Get information about electional astrology methods",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+
+  // === HORARY ASTROLOGY ===
+  {
+    name: "analyze_horary_question",
+    description: "❓ Analyze horary question using traditional horary astrology",
+    inputSchema: {
+      type: "object",
+      properties: {
+        question: { type: "string", description: "The horary question to analyze" },
+        question_datetime: { type: "string", description: "When question was asked (ISO 8601)" },
+        question_latitude: { type: "number", description: "Location where question was asked - latitude" },
+        question_longitude: { type: "number", description: "Location where question was asked - longitude" },
+        question_location: { type: "string", description: "Location where question was asked" },
+        question_timezone: { type: "string", description: "Timezone for question location" }
+      },
+      required: ["question", "question_datetime", "question_latitude", "question_longitude", "question_location", "question_timezone"]
+    }
+  },
+  {
+    name: "get_horary_info",
+    description: "ℹ️ Get information about horary astrology methods",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+
+  // === TRANSITS ===
+  {
+    name: "calculate_transits",
+    description: "🌍 Calculate current planetary transits and their aspects to natal chart",
+    inputSchema: {
+      type: "object",
+      properties: {
+        ...birthDataSchema,
+        target_date: { type: "string", description: "Date for transit analysis (YYYY-MM-DD)", example: "2024-01-15" }
+      },
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "target_date"]
+    }
+  },
+  {
+    name: "find_transits_in_period",
+    description: "📅 Find significant transits in a specific time period",
+    inputSchema: {
+      type: "object",
+      properties: {
+        ...birthDataSchema,
+        start_date: { type: "string", description: "Period start date (YYYY-MM-DD)" },
+        end_date: { type: "string", description: "Period end date (YYYY-MM-DD)" }
+      },
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "start_date", "end_date"]
+    }
+  },
+  {
+    name: "get_transits_info",
+    description: "ℹ️ Get information about transits module and planetary movements",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+
+  // === OTHER SYSTEMS ===
+  {
+    name: "calculate_human_design",
+    description: "⚡ Calculate Human Design chart with type, strategy, authority, and profile analysis",
+    inputSchema: {
+      type: "object",
+      properties: birthDataSchema,
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
+    }
+  },
+  {
+    name: "get_human_design_info",
+    description: "ℹ️ Get information about Human Design system",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+  {
+    name: "calculate_numerology",
+    description: "🔢 Calculate comprehensive numerology analysis with life path, destiny, and personal year numbers",
+    inputSchema: {
+      type: "object",
+      properties: birthDataSchema,
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
+    }
+  },
+  {
+    name: "get_numerology_info",
+    description: "ℹ️ Get information about numerology calculations",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+  {
+    name: "calculate_matrix_of_destiny",
+    description: "🎭 Calculate Matrix of Destiny with 22 archetypes analysis for life purpose insights",
+    inputSchema: {
+      type: "object",
+      properties: birthDataSchema,
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
+    }
+  },
+  {
+    name: "get_matrix_info",
+    description: "ℹ️ Get information about Matrix of Destiny system",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+
+  // === BAZI SYSTEM ===
   {
     name: "calculate_bazi_chart",
     description: "🐉 Calculate BaZi Four Pillars chart with elemental analysis and life insights",
@@ -290,7 +550,7 @@ const tools = [
       type: "object",
       properties: {
         ...baziDataSchema,
-        year: { type: "integer", description: "Target year for forecast", example: 2024 }
+        year: { type: "number", description: "Year for forecast", example: 2024 }
       },
       required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "gender", "year"]
     }
@@ -351,53 +611,56 @@ const tools = [
   }
 ];
 
-// Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return { tools };
+  return {
+    tools: tools
+  };
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
-  
+
   try {
     let endpoint = '';
-    let requestData = {};
-    let method = 'POST'; // Default method
+    let method = 'POST';
+    let requestData = args;
 
-    // Route mapping
     switch (name) {
-      // Core Astrology
+      // === NATAL ASTROLOGY ===
       case "calculate_natal_chart":
         endpoint = '/api/natal/chart';
         requestData = args;
         break;
+      case "get_natal_info":
+        endpoint = '/api/natal/info';
+        method = 'GET';
+        requestData = {};
+        break;
+
+      // === VEDIC ASTROLOGY ===
       case "calculate_vedic_chart":
-        endpoint = '/api/vedic/chart';
+        endpoint = '/api/jyotish/calculate';
         requestData = args;
         break;
-      case "calculate_human_design":
-        endpoint = '/api/human-design/chart';
+      case "get_vedic_info":
+        endpoint = '/api/jyotish/info';
+        method = 'GET';
+        requestData = {};
+        break;
+
+      // === SOLAR RETURNS ===
+      case "calculate_solar_return":
+        endpoint = '/api/solar/return';
         requestData = args;
         break;
-      case "calculate_numerology":
-        endpoint = '/api/numerology/analyze';
+      case "calculate_lunar_return":
+        endpoint = '/api/solar/lunar-return';
         requestData = args;
         break;
-      case "calculate_matrix_of_destiny":
-        endpoint = '/api/matrix-destiny/analyze';
-        requestData = args;
-        break;
-      case "calculate_transits":
-        endpoint = '/api/transits/calculate';
-        // Transform args to match backend expectations
-        requestData = {
-          birth_datetime: args.datetime,
-          birth_latitude: args.latitude,
-          birth_longitude: args.longitude,
-          birth_location: args.location,
-          birth_timezone: args.timezone,
-          target_date: args.target_date || new Date().toISOString().split('T')[0]
-        };
+      case "get_solar_info":
+        endpoint = '/api/solar/info';
+        method = 'GET';
+        requestData = {};
         break;
 
       // === PROGRESSIONS ===
@@ -431,7 +694,165 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         requestData = {};
         break;
 
-      // BaZi
+      // === DIRECTIONS ===
+      case "calculate_directions":
+        endpoint = '/api/directions/calculate';
+        requestData = args;
+        break;
+      case "get_directions_info":
+        endpoint = '/api/directions/info';
+        method = 'GET';
+        requestData = {};
+        break;
+
+      // === RELATIONSHIPS ===
+      case "analyze_synastry":
+        endpoint = '/api/relationship/synastry';
+        requestData = {
+          person1: {
+            name: args.person1_name,
+            datetime: args.person1_datetime,
+            latitude: args.person1_latitude,
+            longitude: args.person1_longitude,
+            location: args.person1_location,
+            timezone: args.person1_timezone
+          },
+          person2: {
+            name: args.person2_name,
+            datetime: args.person2_datetime,
+            latitude: args.person2_latitude,
+            longitude: args.person2_longitude,
+            location: args.person2_location,
+            timezone: args.person2_timezone
+          }
+        };
+        break;
+      case "calculate_composite_chart":
+        endpoint = '/api/relationship/composite';
+        requestData = {
+          person1: {
+            name: args.person1_name,
+            datetime: args.person1_datetime,
+            latitude: args.person1_latitude,
+            longitude: args.person1_longitude,
+            location: args.person1_location,
+            timezone: args.person1_timezone
+          },
+          person2: {
+            name: args.person2_name,
+            datetime: args.person2_datetime,
+            latitude: args.person2_latitude,
+            longitude: args.person2_longitude,
+            location: args.person2_location,
+            timezone: args.person2_timezone
+          }
+        };
+        break;
+      case "get_relationships_info":
+        endpoint = '/api/relationship/info';
+        method = 'GET';
+        requestData = {};
+        break;
+
+      // === ASTROCARTOGRAPHY ===
+      case "calculate_astrocartography_map":
+        endpoint = '/api/astrocartography/world-map';
+        requestData = args;
+        break;
+      case "find_best_locations":
+        endpoint = '/api/astrocartography/best-places';
+        requestData = args;
+        break;
+      case "get_astrocartography_info":
+        endpoint = '/api/astrocartography/info';
+        method = 'GET';
+        requestData = {};
+        break;
+
+      // === ELECTIONAL ===
+      case "find_best_times":
+        endpoint = '/api/electional/find-best-times';
+        requestData = args;
+        break;
+      case "get_electional_info":
+        endpoint = '/api/electional/info';
+        method = 'GET';
+        requestData = {};
+        break;
+
+      // === HORARY ===
+      case "analyze_horary_question":
+        endpoint = '/api/horary/analyze-question';
+        requestData = args;
+        break;
+      case "get_horary_info":
+        endpoint = '/api/horary/info';
+        method = 'GET';
+        requestData = {};
+        break;
+
+      // === TRANSITS ===
+      case "calculate_transits":
+        endpoint = '/api/transits/calculate';
+        requestData = {
+          name: args.name,
+          birth_datetime: args.datetime,
+          birth_latitude: args.latitude,
+          birth_longitude: args.longitude,
+          birth_location: args.location,
+          birth_timezone: args.timezone,
+          target_date: args.target_date || new Date().toISOString().split('T')[0]
+        };
+        break;
+      case "find_transits_in_period":
+        endpoint = '/api/transits/period';
+        requestData = {
+          name: args.name,
+          birth_datetime: args.datetime,
+          birth_latitude: args.latitude,
+          birth_longitude: args.longitude,
+          birth_location: args.location,
+          birth_timezone: args.timezone,
+          start_date: args.start_date,
+          end_date: args.end_date
+        };
+        break;
+      case "get_transits_info":
+        endpoint = '/api/transits/info';
+        method = 'GET';
+        requestData = {};
+        break;
+
+      // === OTHER SYSTEMS ===
+      case "calculate_human_design":
+        endpoint = '/api/human-design/calculate';
+        requestData = args;
+        break;
+      case "get_human_design_info":
+        endpoint = '/api/human-design/info';
+        method = 'GET';
+        requestData = {};
+        break;
+      case "calculate_numerology":
+        endpoint = '/api/numerology/calculate';
+        requestData = args;
+        break;
+      case "get_numerology_info":
+        endpoint = '/api/numerology/info';
+        method = 'GET';
+        requestData = {};
+        break;
+      case "calculate_matrix_of_destiny":
+        endpoint = '/api/matrix/calculate';
+        requestData = args;
+        break;
+      case "get_matrix_info":
+        endpoint = '/api/matrix/info';
+        method = 'GET';
+        requestData = {};
+        break;
+
+      // === BAZI ===
       case "calculate_bazi_chart":
         endpoint = '/api/bazi/chart';
         requestData = args;
@@ -442,7 +863,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         break;
       case "calculate_bazi_compatibility":
         endpoint = '/api/bazi/compatibility';
-        requestData = args;
+        requestData = {
+          person1: {
+            name: args.person1_name,
+            datetime: args.person1_datetime,
+            latitude: args.person1_latitude,
+            longitude: args.person1_longitude,
+            location: args.person1_location,
+            timezone: args.person1_timezone,
+            gender: args.person1_gender
+          },
+          person2: {
+            name: args.person2_name,
+            datetime: args.person2_datetime,
+            latitude: args.person2_latitude,
+            longitude: args.person2_longitude,
+            location: args.person2_location,
+            timezone: args.person2_timezone,
+            gender: args.person2_gender
+          }
+        };
         break;
       case "get_bazi_info":
         endpoint = '/api/bazi/info';
@@ -498,40 +938,39 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw new Error(`Unknown tool: ${name}`);
     }
 
-    // Make request based on method
-    const response = method === 'GET' 
-      ? await apiClient.get(endpoint)
-      : await apiClient.post(endpoint, requestData);
-      
-    const result = JSON.stringify(response.data, null, 2);
+    // Make API call
+    const response = await apiClient.request({
+      method: method,
+      url: endpoint,
+      data: method === 'POST' ? requestData : undefined
+    });
 
     return {
-      content: [{
-        type: "text", 
-        text: `✨ ${name} result:\n\n${result}`
-      }]
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(response.data, null, 2)
+        }
+      ]
     };
 
   } catch (error: any) {
-    let errorMessage = `❌ Error executing ${name}`;
-    
-    if (error.response) {
-      errorMessage += `\nHTTP ${error.response.status}: ${error.response.statusText}`;
-      if (error.response.data) {
-        errorMessage += `\nDetails: ${JSON.stringify(error.response.data, null, 2)}`;
-      }
-    } else if (error.request) {
-      errorMessage += `\nNetwork error: No response received`;
-    } else {
-      errorMessage += `\nError: ${error.message}`;
-    }
+    const errorMessage = error.response?.data?.detail || error.message || 'Unknown error occurred';
+    const statusCode = error.response?.status || 'Unknown';
     
     return {
-      content: [{
-        type: "text",
-        text: errorMessage
-      }],
-      isError: true
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            error: true,
+            message: errorMessage,
+            status: statusCode,
+            tool: name,
+            endpoint: 'error in processing'
+          }, null, 2)
+        }
+      ]
     };
   }
 });
@@ -540,4 +979,4 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 const transport = new StdioServerTransport();
 server.connect(transport);
 
-console.error('🌟 AstroVisor MCP Server v2.3.0 with Progressions started');
+console.error('🌟 AstroVisor MCP Server v2.4.0 - Complete API Coverage Started');
