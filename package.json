@@ -1,6 +1,6 @@
 {
   "name": "astrovisor-mcp",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "🌟 Professional astrology tools for Claude Desktop via MCP - Now with complete BaZi Chinese Astrology system!",
   "main": "build/index.js",
   "bin": {
@@ -42,7 +42,7 @@
   },
   "homepage": "https://astrovisor.io",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.8.0",
+    "@modelcontextprotocol/sdk": "^1.17.3",
     "axios": "^1.7.2",
     "zod": "^3.23.8"
   },
