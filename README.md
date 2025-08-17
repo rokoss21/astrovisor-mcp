@@ -2,7 +2,9 @@
 
 Professional astrology tools for Claude Desktop via the Model Context Protocol (MCP).
 
-🆕 **NEW in v2.2.1**: Complete **BaZi (Chinese Astrology)** system with **15 specialized tools** including Four Pillars, Luck Pillars, Symbolic Stars, career guidance, and comprehensive life analysis!
+🆕 **NEW in v2.3.0**: Complete **Progressions System** with **7 specialized tools** including Secondary, Solar Arc, and Tertiary progressions for precise life timing and developmental analysis!
+
+✨ Also includes complete **BaZi (Chinese Astrology)** system with **15 specialized tools** including Four Pillars, Luck Pillars, Symbolic Stars, career guidance, and comprehensive life analysis!
 
 [![npm version](https://badge.fury.io/js/astrovisor-mcp.svg)](https://badge.fury.io/js/astrovisor-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -18,7 +20,7 @@ Add to your Claude Desktop config:
   "mcpServers": {
     "astrovisor": {
       "command": "npx",
-      "args": ["-y", "astrovisor-mcp@2.2.0"],
+      "args": ["-y", "astrovisor-mcp@2.3.0"],
       "env": {
         "ASTROVISOR_API_KEY": "your-api-key-here",
         "ASTROVISOR_URL": "https://astrovisor.io"
@@ -40,7 +42,7 @@ Then use in Claude Desktop config:
 {
   "mcpServers": {
     "astrovisor": {
-      "command": "astrovisor-mcp@2.2.0",
+      "command": "astrovisor-mcp@2.3.0",
       "env": {
         "ASTROVISOR_API_KEY": "your-api-key-here",
         "ASTROVISOR_URL": "https://astrovisor.io"
@@ -57,7 +59,7 @@ Then use in Claude Desktop config:
 3. Get your API key from the dashboard
 4. Replace `your-api-key-here` in the config above
 
-## 🛠️ Available Tools (21 Professional Instruments)
+## 🛠️ Available Tools (28 Professional Instruments!)
 
 ### 🎯 Core Astrology Modules (6 tools)
 
@@ -85,6 +87,51 @@ Then use in Claude Desktop config:
   - Parameters: Birth data + `transit_date` (optional)
   - Returns: Transit aspects, planetary returns, period tension analysis
   - Features: All 10 planets, 10 aspect types, significance scoring
+
+### 🌙 NEW! Complete Progressions System (7 tools!)
+
+Transform your understanding of life timing and developmental astrology:
+
+#### Core Progressions Methods:
+
+- **calculate_secondary_progressions** - 🌙 Secondary progressions (day = year symbolism)
+  - Parameters: Birth data + `progression_date` (YYYY-MM-DD)
+  - Returns: Progressed planetary positions, aspects to natal chart, progressed lunar phases
+  - Features: Psychological development, inner growth timing, emotional evolution
+
+- **calculate_solar_arc_progressions** - ☀️ Solar arc progressions for major life events
+  - Parameters: Birth data + `progression_date` (YYYY-MM-DD)
+  - Returns: Solar arc directed positions, life event timing, peak influence periods
+  - Features: Career peaks, relationship milestones, major achievements timing
+
+- **calculate_tertiary_progressions** - 🌟 Tertiary progressions for monthly cycles
+  - Parameters: Birth data + `progression_date` (YYYY-MM-DD) 
+  - Returns: Lunar month progressions, detailed timing cycles, short-term influences
+  - Features: Monthly timing, decision-making windows, detailed life planning
+
+#### Advanced Progressions Analysis:
+
+- **compare_progressions** - ⚖️ Compare multiple progression methods simultaneously
+  - Parameters: Birth data + `progression_date` + optional `compare_methods` array
+  - Returns: Side-by-side comparison, consensus indicators, differential analysis
+  - Features: Multi-method validation, timing confirmation, comprehensive perspective
+
+- **create_progressions_timeline** - 📅 Comprehensive life timeline with key events
+  - Parameters: Birth data + `progression_date` (YYYY-MM-DD)
+  - Returns: Life timeline, major transit periods, development phases, event windows
+  - Features: Life planning, optimal timing identification, long-term strategy
+
+- **analyze_progressions_aspects** - 🎯 Precise aspect analysis with exact timing
+  - Parameters: Birth data + `progression_date` (YYYY-MM-DD)
+  - Returns: Exact aspect orbs, formation/separation timing, intensity measurements
+  - Features: Surgical precision timing, aspect strength, influence duration
+
+#### System Information:
+
+- **get_progressions_info** - ℹ️ Complete progressions methodology and capabilities
+  - Parameters: None
+  - Returns: System explanation, methodology details, usage guidelines
+  - Features: Educational content, technical specifications, interpretation guidelines
 
 ### 🐲 Complete BaZi Chinese Astrology System (15 tools!)
 
@@ -162,6 +209,15 @@ Then use in Claude Desktop config:
 - "What's my Human Design type and strategy?"
 - "Calculate my numerology profile and life path number"
 
+### NEW! Progressions Timing:
+- "Calculate my secondary progressions for December 2024"
+- "Show me solar arc progressions for my career peak timing"
+- "Create a progressions timeline for the next 2 years"
+- "Compare all progression methods for March 2025"
+- "Analyze progression aspects for precise timing this month"
+- "What do tertiary progressions say about next month?"
+- "Explain how progressions work and their methodology"
+
 ### BaZi Chinese Astrology:
 - "Calculate my complete BaZi chart for March 15, 1985 at 2:30 PM in Beijing"
 - "Analyze my BaZi personality and character traits"
@@ -175,7 +231,7 @@ Then use in Claude Desktop config:
 
 ## 📋 Configuration Files Location
 
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Windows**: `%APPDATA%\\Claude\\claude_desktop_config.json`
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Linux**: `~/.config/claude/claude_desktop_config.json`
 
@@ -223,7 +279,8 @@ MIT License - see LICENSE file for details.
 
 ## 🌟 Features
 
-- 🔮 **21 Professional Tools**: Most complete astrology MCP server available
+- 🔮 **28 Professional Tools**: Most complete astrology MCP server available
+- 🌙 **NEW! Complete Progressions**: 7 specialized timing and development tools  
 - 🐲 **Complete BaZi System**: 15 specialized Chinese astrology tools
 - 🎯 **Easy Setup**: One command installation via npx
 - 🔐 **Secure**: API key authentication
@@ -237,75 +294,72 @@ Created by **Emil Rokossovskiy** - [GitHub Profile](https://github.com/rokoss21/
 
 Professional developer specializing in AI integrations and astrological software.
 
-## 🌟 NEW: Complete BaZi System v2.2.1
+## 🌙 NEW: Complete Progressions System v2.3.0
 
-### What Makes Our BaZi System Special:
+### What Makes Our Progressions System Revolutionary:
 
-#### 🐲 Traditional Authenticity:
-- Based on authentic Chinese astrological principles
-- Complete Four Pillars (Year, Month, Day, Hour) calculation
-- Heavenly Stems (天干) and Earthly Branches (地支) analysis
-- Five Element (五行) balance assessment
-- Yin/Yang polarity analysis
+#### ⏰ Multiple Timing Methods:
+- **Secondary Progressions**: Classic day-for-year symbolic system
+- **Solar Arc Directions**: Sun's movement applied to all planets
+- **Tertiary Progressions**: Lunar month progressions for detailed timing
+- **Comparative Analysis**: Multi-method validation and consensus
 
-#### 🎯 Advanced Techniques:
-- **Luck Pillars (大運)**: 10-year life period analysis
-- **Symbolic Stars (神煞)**: Special star configurations and influences
-- **Twelve Palaces (十二宫)**: Comprehensive life areas analysis
-- **Useful God (用神)**: Beneficial element identification
-- **Nayin (納音)**: Traditional sound element analysis
+#### 🎯 Precision Features:
+- **Exact Aspect Timing**: When aspects form and separate
+- **Orb Calculations**: Precise influence strength measurement
+- **Duration Analysis**: How long influences will last
+- **Peak Timing**: When effects are strongest
 
-#### 💼 Life Guidance:
-- **Career & Professional**: Suitable professions, business timing, success factors
-- **Relationships & Marriage**: Compatibility analysis, marriage timing, relationship advice
-- **Health & Wellness**: Constitutional analysis, health tendencies, prevention
-- **Annual Forecasting**: Year-by-year analysis, monthly influences, optimal timing
+#### 📅 Life Planning Tools:
+- **Timeline Creation**: Visual life development mapping
+- **Event Windows**: Optimal timing for major decisions
+- **Development Phases**: Understanding psychological evolution
+- **Milestone Prediction**: Career, relationship, and personal peaks
 
-#### 🔬 Modern Integration:
-- Gender-specific interpretations for accurate analysis
-- Location-precise calculations using geographic coordinates
-- Psychological insights combined with traditional methods
-- Comprehensive compatibility analysis between two people
-- Complete English explanations of Chinese concepts
+#### 🔬 Technical Excellence:
+- **Swiss Ephemeris Precision**: Astronomical accuracy
+- **Modern Interpretations**: Psychological and practical insights
+- **Multi-Method Validation**: Cross-reference for reliability
+- **Flexible Date Ranges**: Any progression date from 1800-2100
 
-### Example BaZi Analysis Output:
+### Example Progressions Analysis Output:
 
 ```
-🐲 Four Pillars: 甲子 丁卯 戊申 庚申
-💎 Day Master: 戊土 (Yang Earth)
-⚖️ Element Balance: Earth 40%, Metal 30%, Wood 20%, Water 10%
-🎯 Life Theme: Steady growth through persistent effort
-🍀 Luck Pillars: Currently in favorable Wood period (2020-2030)
-⭐ Symbolic Stars: Noble Person, Academic Star present
-💼 Career: Finance, real estate, consulting highly favorable
-❤️ Relationships: Best compatibility with Water and Wood types
-🏥 Health: Strong constitution, watch digestive system
+🌙 Secondary Progressions for March 2024:
+✨ Progressed Sun: 15°23' Gemini (natal 8°12' Taurus)
+🌙 Progressed Moon: 2°47' Virgo - New Phase beginning
+🎯 Key Aspects:
+   • Progressed Venus conjunct natal Jupiter (exact Feb 2024) - Love expansion
+   • Progressed MC sextile natal Sun (exact April 2024) - Career recognition
+   
+☀️ Solar Arc Progressions:
+🎯 SA Mars square natal Venus (exact May 2024) - Relationship dynamics
+🌟 SA Jupiter trine natal Ascendant (exact June 2024) - New opportunities
+
+⚖️ Consensus Timing:
+💎 March-June 2024: Relationship and career expansion period
+🎯 Peak timing: April 15-30, 2024
 ```
 
-## 🌟 Transits Analysis Features
+## 🌟 Complete System Overview
 
-### Transit Calculation Features:
-- **Comprehensive Analysis**: All major and minor aspects to natal planets
-- **Planetary Returns**: Automatic detection with precision timing
-- **Period Tension Scoring**: Algorithmic assessment of influences
-- **Significance Rating**: Smart filtering of most important transits
-- **Duration Estimates**: How long each influence will last
-- **Detailed Interpretations**: Rich astrological meanings
+### Progressions vs Transits vs Natal:
+- **Natal Chart**: Your blueprint and potential at birth
+- **Transits**: Current planetary influences (external triggers)
+- **Progressions**: Your inner development and psychological evolution (internal growth)
 
-### Supported Planets & Weights:
-- **Personal Planets**: Sun (1.0), Moon (0.6), Mercury (0.4), Venus (0.5), Mars (0.7)
-- **Social Planets**: Jupiter (1.2), Saturn (1.3) 
-- **Outer Planets**: Uranus (1.1), Neptune (1.1), Pluto (1.2)
+### When to Use Each Progression Method:
+- **Secondary**: Psychological development, inner changes, personality evolution
+- **Solar Arc**: Major life events, career milestones, relationship changes
+- **Tertiary**: Monthly planning, detailed timing, short-term decision making
 
-### Advanced Features:
-- **Customizable Orbs**: Adjust sensitivity (0.1x to 3.0x)
-- **Significance Filtering**: Focus on important transits (0.0 to 1.0 scale)
-- **Aspect Types**: Major + minor aspects included
-- **Smart Returns**: Detects planetary returns within 2° orb
-- **Tension Analysis**: Overall supportive vs challenging climate
+### Perfect Integration with Other Systems:
+- **BaZi Progressions**: Combine with Luck Pillars for East-West synthesis
+- **Transit Confirmations**: Validate timing with current planetary movements
+- **Natal Promises**: See which birth potentials are being activated
 
 ---
 
 **Get your API key at [astrovisor.io](https://astrovisor.io) and explore the most comprehensive astrology system available for Claude!** 🌟
 
-**Keywords**: mcp, astrology, claude, ai, bazi, chinese-astrology, four-pillars, luck-pillars, symbolic-stars, career-guidance, compatibility, personality-analysis, natal-chart, human-design, numerology, vedic-astrology, transits, professional-astrology
+**Keywords**: mcp, astrology, claude, ai, progressions, secondary-progressions, solar-arc, tertiary-progressions, timing, life-planning, bazi, chinese-astrology, four-pillars, luck-pillars, symbolic-stars, career-guidance, compatibility, personality-analysis, natal-chart, human-design, numerology, vedic-astrology, transits, professional-astrology, developmental-astrology, psychological-astrology

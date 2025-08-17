@@ -1,57 +1,76 @@
-#!/usr/bin/env node
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod";
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import axios from 'axios';
+import 'dotenv/config';
 
-// 🌟 ASTROVISOR COMPLETE MCP SERVER WITH ALL BAZI TOOLS 🌟
-const API_KEY = process.env.ASTROVISOR_API_KEY;
-const API_BASE_URL = process.env.ASTROVISOR_URL || 'https://astrovisor.io';
+// API Configuration
+const API_BASE_URL = process.env.ASTRO_API_BASE_URL || 'http://localhost:8000';
+const API_KEY = process.env.ASTRO_API_KEY || '';
 
 if (!API_KEY) {
-  throw new Error('ASTROVISOR_API_KEY environment variable is required');
+  throw new Error('ASTRO_API_KEY environment variable is required');
 }
 
+// API Client
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Authorization': `Bearer ${API_KEY}`,
     'Content-Type': 'application/json',
+    'X-API-Key': API_KEY
   },
-  timeout: 60000,
+  timeout: 30000
 });
 
-const server = new Server({
-  name: "astrovisor-complete-server",
-  version: "2.2.3"
-}, {
-  capabilities: {
-    tools: {}
-  }
-});
-
-// Base schema for birth data
+// Common schema definitions
 const birthDataSchema = {
   name: { type: "string", description: "Person's name" },
-  datetime: { type: "string", description: "Birth date and time in ISO format" },
-  latitude: { type: "number", description: "Birth location latitude" },
-  longitude: { type: "number", description: "Birth location longitude" },
-  location: { type: "string", description: "Birth location name" },
-  timezone: { type: "string", description: "IANA timezone" }
+  datetime: { type: "string", description: "Birth date and time (ISO 8601 format)", example: "1988-07-12T12:15:00" },
+  latitude: { type: "number", description: "Birth latitude", example: 55.0084 },
+  longitude: { type: "number", description: "Birth longitude", example: 82.9357 },
+  location: { type: "string", description: "Birth location", example: "Novosibirsk, Russia" },
+  timezone: { type: "string", description: "Timezone", example: "Asia/Novosibirsk" }
 };
 
 const baziDataSchema = {
-  ...birthDataSchema,
-  gender: { type: "string", enum: ["male", "female"], description: "Gender for accurate analysis" }
+  name: { type: "string", description: "Person's name" },
+  datetime: { type: "string", description: "Birth date and time (ISO 8601 format)", example: "1988-07-12T12:15:00" },
+  latitude: { type: "number", description: "Birth latitude", example: 55.0084 },
+  longitude: { type: "number", description: "Birth longitude", example: 82.9357 },
+  location: { type: "string", description: "Birth location", example: "Novosibirsk, Russia" },
+  timezone: { type: "string", description: "Timezone", example: "Asia/Novosibirsk" },
+  gender: { type: "string", enum: ["male", "female"], description: "Gender for BaZi analysis" }
 };
 
-// 🌟 COMPLETE TOOL SET INCLUDING ALL 15 BAZI TOOLS 🌟
+const progressionDataSchema = {
+  name: { type: "string", description: "Person's name" },
+  datetime: { type: "string", description: "Birth date and time (ISO 8601 format)", example: "1988-07-12T12:15:00" },
+  latitude: { type: "number", description: "Birth latitude", example: 55.0084 },
+  longitude: { type: "number", description: "Birth longitude", example: 82.9357 },
+  location: { type: "string", description: "Birth location", example: "Novosibirsk, Russia" },
+  timezone: { type: "string", description: "Timezone", example: "Asia/Novosibirsk" },
+  progression_date: { type: "string", description: "Progression date (YYYY-MM-DD)", example: "2024-07-12" }
+};
+
+// Server setup
+const server = new Server(
+  {
+    name: "astrovisor-complete-server",
+    version: "2.3.0"
+  },
+  {
+    capabilities: {
+      tools: {}
+    }
+  }
+);
+
+// Tool definitions
 const tools = [
-  // ===== CORE ASTROLOGY =====
+  // === CORE ASTROLOGY ===
   {
     name: "calculate_natal_chart",
-    description: "🌟 Complete natal chart analysis with planets, houses, and aspects",
+    description: "🌟 Calculate comprehensive natal (birth) chart with planets, houses, aspects, and personality analysis",
     inputSchema: {
       type: "object",
       properties: birthDataSchema,
@@ -60,16 +79,16 @@ const tools = [
   },
   {
     name: "calculate_vedic_chart",
-    description: "🕉️ Vedic astrology (Jyotish) with sidereal zodiac",
+    description: "🕉️ Calculate Vedic (Jyotish) astrology chart with divisional charts and dasha periods",
     inputSchema: {
-      type: "object", 
+      type: "object",
       properties: birthDataSchema,
       required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
     }
   },
   {
     name: "calculate_human_design",
-    description: "🔮 Human Design bodygraph with type, strategy, and authority",
+    description: "⚡ Calculate Human Design chart with type, strategy, authority, and profile analysis",
     inputSchema: {
       type: "object",
       properties: birthDataSchema,
@@ -78,7 +97,7 @@ const tools = [
   },
   {
     name: "calculate_numerology",
-    description: "🔢 Complete numerological analysis",
+    description: "🔢 Calculate comprehensive numerology analysis with life path, destiny, and personal year numbers",
     inputSchema: {
       type: "object",
       properties: birthDataSchema,
@@ -87,7 +106,7 @@ const tools = [
   },
   {
     name: "calculate_matrix_of_destiny",
-    description: "🎴 Matrix of Destiny with arcanas and energy centers",
+    description: "🎭 Calculate Matrix of Destiny with 22 archetypes analysis for life purpose insights",
     inputSchema: {
       type: "object",
       properties: birthDataSchema,
@@ -96,21 +115,89 @@ const tools = [
   },
   {
     name: "calculate_transits",
-    description: "🌍 Current planetary transits and their influences",
+    description: "🌍 Calculate current planetary transits and their aspects to natal chart",
     inputSchema: {
       type: "object",
       properties: {
         ...birthDataSchema,
-        target_date: { type: "string", description: "Date for transit analysis (YYYY-MM-DD format). Defaults to today if not specified." }
+        target_date: { type: "string", description: "Date for transit analysis (YYYY-MM-DD)", example: "2024-01-15" }
       },
       required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
     }
   },
 
-  // ===== COMPLETE BAZI SYSTEM (15 TOOLS!) =====
+  // === PROGRESSIONS ===
+  {
+    name: "calculate_secondary_progressions",
+    description: "🌙 Calculate secondary progressions (day = year) for psychological development analysis",
+    inputSchema: {
+      type: "object",
+      properties: progressionDataSchema,
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "progression_date"]
+    }
+  },
+  {
+    name: "calculate_solar_arc_progressions",
+    description: "☀️ Calculate solar arc progressions for timing major life events",
+    inputSchema: {
+      type: "object",
+      properties: progressionDataSchema,
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "progression_date"]
+    }
+  },
+  {
+    name: "calculate_tertiary_progressions",
+    description: "🌟 Calculate tertiary progressions for monthly cycles and detailed timing",
+    inputSchema: {
+      type: "object",
+      properties: progressionDataSchema,
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "progression_date"]
+    }
+  },
+  {
+    name: "compare_progressions",
+    description: "⚖️ Compare different progression methods (secondary, solar arc, tertiary) for comprehensive analysis",
+    inputSchema: {
+      type: "object",
+      properties: {
+        ...progressionDataSchema,
+        compare_methods: { type: "array", items: { type: "string" }, description: "Methods to compare", example: ["secondary", "solar_arc"] }
+      },
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "progression_date"]
+    }
+  },
+  {
+    name: "create_progressions_timeline",
+    description: "📅 Create comprehensive progressions timeline for life planning and event timing",
+    inputSchema: {
+      type: "object",
+      properties: progressionDataSchema,
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "progression_date"]
+    }
+  },
+  {
+    name: "analyze_progressions_aspects",
+    description: "🎯 Analyze specific progressions aspects for precise timing and influences",
+    inputSchema: {
+      type: "object",
+      properties: progressionDataSchema,
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "progression_date"]
+    }
+  },
+  {
+    name: "get_progressions_info",
+    description: "ℹ️ Get comprehensive information about progressions module and its capabilities",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+
+  // === BAZI (Chinese Astrology) ===
   {
     name: "calculate_bazi_chart",
-    description: "🐲 Complete BaZi Four Pillars of Destiny chart",
+    description: "🐉 Calculate BaZi Four Pillars chart with elemental analysis and life insights",
     inputSchema: {
       type: "object",
       properties: baziDataSchema,
@@ -119,7 +206,7 @@ const tools = [
   },
   {
     name: "analyze_bazi_personality",
-    description: "🧠 Deep personality analysis via BaZi system",
+    description: "🎭 Analyze BaZi personality traits, strengths, and behavioral patterns",
     inputSchema: {
       type: "object",
       properties: baziDataSchema,
@@ -128,22 +215,22 @@ const tools = [
   },
   {
     name: "calculate_bazi_compatibility",
-    description: "💕 Relationship compatibility analysis between two people",
+    description: "💕 Calculate BaZi compatibility between two people for relationships",
     inputSchema: {
       type: "object",
       properties: {
         person1_name: { type: "string", description: "First person's name" },
         person1_datetime: { type: "string", description: "First person's birth datetime" },
-        person1_latitude: { type: "number", description: "First person's latitude" },
-        person1_longitude: { type: "number", description: "First person's longitude" },
-        person1_location: { type: "string", description: "First person's location" },
+        person1_latitude: { type: "number", description: "First person's birth latitude" },
+        person1_longitude: { type: "number", description: "First person's birth longitude" },
+        person1_location: { type: "string", description: "First person's birth location" },
         person1_timezone: { type: "string", description: "First person's timezone" },
         person1_gender: { type: "string", enum: ["male", "female"], description: "First person's gender" },
         person2_name: { type: "string", description: "Second person's name" },
         person2_datetime: { type: "string", description: "Second person's birth datetime" },
-        person2_latitude: { type: "number", description: "Second person's latitude" },
-        person2_longitude: { type: "number", description: "Second person's longitude" },
-        person2_location: { type: "string", description: "Second person's location" },
+        person2_latitude: { type: "number", description: "Second person's birth latitude" },
+        person2_longitude: { type: "number", description: "Second person's birth longitude" },
+        person2_location: { type: "string", description: "Second person's birth location" },
         person2_timezone: { type: "string", description: "Second person's timezone" },
         person2_gender: { type: "string", enum: ["male", "female"], description: "Second person's gender" }
       },
@@ -152,7 +239,7 @@ const tools = [
   },
   {
     name: "get_bazi_info",
-    description: "ℹ️ General information about BaZi system and methodology",
+    description: "ℹ️ Get information about BaZi system and available analysis methods",
     inputSchema: {
       type: "object",
       properties: {},
@@ -161,7 +248,7 @@ const tools = [
   },
   {
     name: "analyze_bazi_twelve_palaces",
-    description: "🏛️ BaZi Twelve Palaces (life areas) analysis",
+    description: "🏛️ Analyze BaZi Twelve Palaces for detailed life area insights",
     inputSchema: {
       type: "object",
       properties: baziDataSchema,
@@ -170,7 +257,7 @@ const tools = [
   },
   {
     name: "analyze_bazi_life_focus",
-    description: "🎯 BaZi life focus and main themes analysis",
+    description: "🎯 Analyze BaZi life focus areas and priorities for personal development",
     inputSchema: {
       type: "object",
       properties: baziDataSchema,
@@ -179,7 +266,7 @@ const tools = [
   },
   {
     name: "analyze_bazi_symbolic_stars",
-    description: "⭐ BaZi Symbolic Stars (Shen Sha) analysis",
+    description: "⭐ Analyze BaZi symbolic stars for spiritual and karmic insights",
     inputSchema: {
       type: "object",
       properties: baziDataSchema,
@@ -188,7 +275,7 @@ const tools = [
   },
   {
     name: "calculate_bazi_luck_pillars",
-    description: "🍀 BaZi Luck Pillars (10-year periods) analysis",
+    description: "🍀 Calculate BaZi luck pillars for 10-year life cycle predictions",
     inputSchema: {
       type: "object",
       properties: baziDataSchema,
@@ -197,19 +284,19 @@ const tools = [
   },
   {
     name: "calculate_bazi_annual_forecast",
-    description: "📅 BaZi annual forecast and yearly influences",
+    description: "📅 Calculate BaZi annual forecast with monthly breakdowns",
     inputSchema: {
       type: "object",
       properties: {
         ...baziDataSchema,
-        target_year: { type: "number", description: "Year for forecast (optional, defaults to current year)" }
+        year: { type: "integer", description: "Target year for forecast", example: 2024 }
       },
-      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "gender"]
+      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "gender", "year"]
     }
   },
   {
     name: "get_bazi_complete_analysis",
-    description: "📋 Complete comprehensive BaZi analysis (all aspects)",
+    description: "📊 Get complete BaZi analysis with all major components",
     inputSchema: {
       type: "object",
       properties: baziDataSchema,
@@ -218,7 +305,7 @@ const tools = [
   },
   {
     name: "get_bazi_career_guidance",
-    description: "💼 BaZi-based career and professional guidance",
+    description: "💼 Get BaZi career guidance and professional direction analysis",
     inputSchema: {
       type: "object",
       properties: baziDataSchema,
@@ -227,7 +314,7 @@ const tools = [
   },
   {
     name: "get_bazi_relationship_guidance",
-    description: "❤️ BaZi relationship and marriage guidance",
+    description: "💕 Get BaZi relationship guidance for love and partnerships",
     inputSchema: {
       type: "object",
       properties: baziDataSchema,
@@ -236,7 +323,7 @@ const tools = [
   },
   {
     name: "get_bazi_health_insights",
-    description: "🏥 BaZi health insights and wellness guidance",
+    description: "🏥 Get BaZi health insights and wellness recommendations",
     inputSchema: {
       type: "object",
       properties: baziDataSchema,
@@ -245,7 +332,7 @@ const tools = [
   },
   {
     name: "analyze_bazi_nayin",
-    description: "🎵 BaZi Nayin (sound) analysis - traditional element sounds",
+    description: "🎵 Analyze BaZi Nayin (60 sounds) for spiritual and destiny insights",
     inputSchema: {
       type: "object",
       properties: baziDataSchema,
@@ -284,38 +371,66 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         requestData = args;
         break;
       case "calculate_vedic_chart":
-        endpoint = '/api/jyotish/calculate';
+        endpoint = '/api/vedic/chart';
         requestData = args;
         break;
       case "calculate_human_design":
-        endpoint = '/api/human-design/calculate';
+        endpoint = '/api/human-design/chart';
         requestData = args;
         break;
       case "calculate_numerology":
-        endpoint = '/api/numerology/calculate';
+        endpoint = '/api/numerology/analyze';
         requestData = args;
         break;
       case "calculate_matrix_of_destiny":
-        endpoint = '/api/matrix/calculate';
+        endpoint = '/api/matrix-destiny/analyze';
         requestData = args;
         break;
       case "calculate_transits":
         endpoint = '/api/transits/calculate';
-        // Transform data for transits API
+        // Transform args to match backend expectations
         requestData = {
-          name: args.name,
           birth_datetime: args.datetime,
           birth_latitude: args.latitude,
           birth_longitude: args.longitude,
           birth_location: args.location,
           birth_timezone: args.timezone,
-          target_date: args.target_date || new Date().toISOString().split('T')[0], // Default to today
-          orb_factor: 1.0,
-          min_significance: 0.3
+          target_date: args.target_date || new Date().toISOString().split('T')[0]
         };
         break;
 
-      // Complete BaZi System (15 tools)
+      // === PROGRESSIONS ===
+      case "calculate_secondary_progressions":
+        endpoint = '/api/progressions/secondary';
+        requestData = args;
+        break;
+      case "calculate_solar_arc_progressions":
+        endpoint = '/api/progressions/solar-arc';
+        requestData = args;
+        break;
+      case "calculate_tertiary_progressions":
+        endpoint = '/api/progressions/tertiary';
+        requestData = args;
+        break;
+      case "compare_progressions":
+        endpoint = '/api/progressions/compare';
+        requestData = args;
+        break;
+      case "create_progressions_timeline":
+        endpoint = '/api/progressions/timeline';
+        requestData = args;
+        break;
+      case "analyze_progressions_aspects":
+        endpoint = '/api/progressions/aspects';
+        requestData = args;
+        break;
+      case "get_progressions_info":
+        endpoint = '/api/progressions/info';
+        method = 'GET';
+        requestData = {};
+        break;
+
+      // BaZi
       case "calculate_bazi_chart":
         endpoint = '/api/bazi/chart';
         requestData = args;
@@ -404,25 +519,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (error.response.data) {
         errorMessage += `\nDetails: ${JSON.stringify(error.response.data, null, 2)}`;
       }
-    } else if (error.code === 'ECONNREFUSED') {
-      errorMessage += `\nConnection error to API: ${API_BASE_URL}`;
+    } else if (error.request) {
+      errorMessage += `\nNetwork error: No response received`;
     } else {
-      errorMessage += `\nInternal error: ${error.message}`;
+      errorMessage += `\nError: ${error.message}`;
     }
     
     return {
       content: [{
         type: "text",
         text: errorMessage
-      }]
+      }],
+      isError: true
     };
   }
 });
 
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("🌟 AstroVisor Complete MCP Server - ALL 21 TOOLS INCLUDING FULL BAZI SYSTEM! 🌟");
-}
+// Start server
+const transport = new StdioServerTransport();
+server.connect(transport);
 
-main().catch(console.error);
+console.error('🌟 AstroVisor MCP Server v2.3.0 with Progressions started');
