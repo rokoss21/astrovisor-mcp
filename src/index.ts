@@ -18,7 +18,7 @@ const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
-    'X-API-Key': API_KEY
+    'Authorization': `Bearer ${API_KEY}`
   },
   timeout: 30000
 });
@@ -57,7 +57,7 @@ const progressionDataSchema = {
 const server = new Server(
   {
     name: "astrovisor-complete-server",
-    version: "2.3.2"
+    version: "2.3.3"
   },
   {
     capabilities: {
