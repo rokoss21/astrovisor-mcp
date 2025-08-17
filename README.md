@@ -2,7 +2,7 @@
 
 Professional astrology tools for Claude Desktop via the Model Context Protocol (MCP).
 
-🆕 **NEW in v2.2.0**: Complete **BaZi (Chinese Astrology)** system with **15 specialized tools** including Four Pillars, Luck Pillars, Symbolic Stars, career guidance, and comprehensive life analysis!
+🆕 **NEW in v2.2.1**: Complete **BaZi (Chinese Astrology)** system with **15 specialized tools** including Four Pillars, Luck Pillars, Symbolic Stars, career guidance, and comprehensive life analysis!
 
 [![npm version](https://badge.fury.io/js/astrovisor-mcp.svg)](https://badge.fury.io/js/astrovisor-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -237,7 +237,7 @@ Created by **Emil Rokossovskiy** - [GitHub Profile](https://github.com/rokoss21/
 
 Professional developer specializing in AI integrations and astrological software.
 
-## 🌟 NEW: Complete BaZi System v2.2.0
+## 🌟 NEW: Complete BaZi System v2.2.1
 
 ### What Makes Our BaZi System Special:
 
