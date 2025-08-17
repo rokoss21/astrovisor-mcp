@@ -1,18 +1,14 @@
-# 🌟 Astrovisor MCP Server
+# 🌟 AstroVisor MCP Server
 
 Professional astrology tools for Claude Desktop via the Model Context Protocol (MCP).
 
-🆕 **NEW in v1.1.4**: Added **Planetary Transits** analysis with 10 planets, 10 aspect types, and detailed interpretations!
+🆕 **NEW in v2.2.0**: Complete **BaZi (Chinese Astrology)** system with **15 specialized tools** including Four Pillars, Luck Pillars, Symbolic Stars, and comprehensive life guidance!
 
-
-[![npm version](https://badge.fury.io/js/astrovisor-mcp.svg)](https://badge.fury.io/js/astrovisor-mcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
+[![npm version](https://badge.fury.io/js/astrovisor-mcp.svg)](https://badge.fury.io/js/astrovisor-mcp) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
 ## 🚀 Quick Start
 
 ### Installation via npx (Recommended)
-
 Add to your Claude Desktop config:
 
 ```json
@@ -20,7 +16,7 @@ Add to your Claude Desktop config:
   "mcpServers": {
     "astrovisor": {
       "command": "npx",
-      "args": ["-y", "astrovisor-mcp@1.1.4"],
+      "args": ["-y", "astrovisor-mcp@2.2.0"],
       "env": {
         "ASTROVISOR_API_KEY": "your-api-key-here",
         "ASTROVISOR_URL": "https://astrovisor.io"
@@ -31,213 +27,134 @@ Add to your Claude Desktop config:
 ```
 
 ### Global Installation
-
 ```bash
 npm install -g astrovisor-mcp
 ```
 
-Then use in Claude Desktop config:
-
-```json
-{
-  "mcpServers": {
-    "astrovisor": {
-      "command": "astrovisor-mcp@1.1.4",
-      "env": {
-        "ASTROVISOR_API_KEY": "your-api-key-here",
-        "ASTROVISOR_URL": "https://astrovisor.io"
-      }
-    }
-  }
-}
-```
-
 ## 🔑 Getting Your API Key
 
-1. Visit **[astrovisor.io](https://astrovisor.io)** 
+1. Visit [astrovisor.io](https://astrovisor.io)
 2. Sign up for an account
 3. Get your API key from the dashboard
 4. Replace `your-api-key-here` in the config above
 
 ## 🛠️ Available Tools
 
-### 🎯 Core Astrology Modules
+### 🎯 Core Astrology Modules (6 tools)
 
-- **calculate_natal_chart** - Complete natal chart analysis with planets, houses, and aspects
-  - Parameters: `name`, `date` (YYYY-MM-DD), `time` (HH:MM), `location`, `latitude`, `longitude`, `timezone`
-  - Returns: Planet positions, house cusps, aspects, interpretations
+**calculate_natal_chart** - Complete natal chart analysis with planets, houses, and aspects
 
-- **calculate_jyotish** - Vedic astrology calculations with sidereal zodiac
-  - Parameters: `name`, `date`, `time`, `location`, `latitude`, `longitude`, `timezone`
-  - Returns: Sidereal positions, nakshatras, dashas, divisional charts
+**calculate_vedic_chart** - Vedic astrology (Jyotish) with sidereal zodiac  
 
-- **calculate_solar_return** - Solar return charts for yearly predictions
-  - Parameters: `name`, `birth_date`, `birth_time`, `birth_location`, `birth_latitude`, `birth_longitude`, `birth_timezone`, `return_year`
-  - Returns: Solar return chart with predictions for the year
+**calculate_human_design** - Human Design bodygraph with type, strategy, and authority
 
-### 🔮 Advanced Techniques
+**calculate_numerology** - Complete numerological analysis
 
-- **calculate_progressions** - Secondary progressions analysis
-  - Parameters: Birth data + `progression_date`
-  - Returns: Progressed planets, aspects to natal chart
+**calculate_matrix_of_destiny** - Matrix of Destiny with arcanas and energy centers
 
-- **calculate_directions** - Solar arc directions
+**calculate_transits** - Current planetary transits and their influences
 
-- **calculate_transits** - Planetary transits to natal chart
-  - Parameters: Birth data + `target_date`, `orb_factor`, `min_significance`
-  - Returns: Transit aspects, planetary returns, period tension analysis, detailed interpretations
-  - Features: All 10 planets, 10 aspect types, significance scoring, period recommendations
+### 🐲 Complete BaZi Chinese Astrology System (15 tools!)
 
-- **calculate_transits** - Транзиты планет к натальной карте
-  - Parameters: Birth data + `target_date`, `orb_factor`, `min_significance`
-  - Returns: Транзитные аспекты, планетарные возвращения, анализ периода
-  - Parameters: Birth data + `target_date` 
-  - Returns: Directed planets, activation dates
+#### Core BaZi Analysis:
+**calculate_bazi_chart** - Complete BaZi Four Pillars of Destiny chart
+**analyze_bazi_personality** - Deep personality analysis via BaZi system
+**calculate_bazi_compatibility** - Relationship compatibility between two people
+**get_bazi_info** - General information about BaZi methodology
 
-- **analyze_relationship** - Synastry and composite charts
-  - Parameters: Two sets of birth data (`partner1`, `partner2`)
-  - Returns: Compatibility analysis, composite chart
+#### Advanced BaZi Techniques:
+**analyze_bazi_twelve_palaces** - Twelve life areas (palaces) analysis
+**analyze_bazi_life_focus** - Main life themes and focus areas
+**analyze_bazi_symbolic_stars** - Symbolic Stars (Shen Sha) analysis
+**calculate_bazi_luck_pillars** - 10-year luck periods analysis
+**calculate_bazi_annual_forecast** - Yearly influences and predictions
 
-### 🌍 Location & Timing
+#### Comprehensive BaZi Reports:
+**get_bazi_complete_analysis** - Full comprehensive BaZi analysis
+**get_bazi_career_guidance** - Professional and career guidance
+**get_bazi_relationship_guidance** - Love and marriage guidance  
+**get_bazi_health_insights** - Health and wellness insights
+**analyze_bazi_nayin** - Traditional Nayin (sound) element analysis
+**analyze_bazi_useful_god** - Beneficial elements and remedies
 
-- **calculate_astrocartography** - Location-based astrology
-  - Parameters: Birth data + `analysis_type`
-  - Returns: Planetary lines on world map, location recommendations
+## 📝 Example Usage in Claude
 
-- **find_electional_times** - Best timing for events
-  - Parameters: Birth data + `purpose`, `start_date`, `end_date`, `location`
-  - Returns: Optimal dates and times for important events
+### Core Astrology:
+- "Calculate my natal chart for January 1, 1990 at 12:00 PM in New York"
+- "What are my current planetary transits?"
+- "What's my Human Design type?"
 
-### 📊 Specialized Systems
+### BaZi Chinese Astrology:
+- "Calculate my complete BaZi chart for March 15, 1985 in Beijing"
+- "Analyze my BaZi personality and character traits" 
+- "What do my BaZi Luck Pillars say about my 10-year cycles?"
+- "Give me BaZi career guidance based on my birth data"
+- "Analyze my BaZi compatibility with someone born June 20, 1992"
+- "What are my BaZi Symbolic Stars and their meanings?"
+- "Show me my BaZi annual forecast for this year"
 
-- **analyze_horary** - Horary astrology questions
-  - Parameters: `question`, `question_time`, `location`
-  - Returns: Chart analysis and answer to specific question
+## 🌟 NEW: Complete BaZi System v2.2.0
 
-- **calculate_numerology** - Numerological analysis
-  - Parameters: `name`, `date`, `full_name`
-  - Returns: Life path number, destiny number, personal year cycles
+### What's Included:
+- **15 Specialized BaZi Tools**: From basic charts to advanced techniques
+- **Four Pillars Analysis**: Complete Year, Month, Day, Hour pillars
+- **Luck Pillars**: 10-year life period analysis
+- **Symbolic Stars**: Traditional Shen Sha interpretations  
+- **Life Guidance**: Career, relationships, health insights
+- **Compatibility Analysis**: Deep relationship analysis
+- **Annual Forecasting**: Yearly influences and predictions
 
-- **calculate_matrix** - Matrix of Destiny
-  - Parameters: `name`, `date`
-  - Returns: Arcana analysis, karmic tasks, talents
-
-- **calculate_human_design** - Human Design bodygraph
-  - Parameters: `name`, `date`, `time`, `location`, `latitude`, `longitude`, `timezone`
-  - Returns: Type, strategy, authority, centers, channels, gates
-
-### 🔧 Utility
-
-- **validate_api_key** - Check your API key status
-  - Parameters: None
-  - Returns: Key validity, usage statistics, rate limits
+### BaZi Features:
+- **Traditional Methods**: Based on authentic Chinese astrology
+- **Gender Considerations**: Male/female specific interpretations
+- **Comprehensive Reports**: From quick insights to full analysis
+- **Modern Integration**: Combined with psychological insights
+- **Professional Grade**: Suitable for professional astrologers
 
 ## 📋 Configuration Files Location
 
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`  
 - **Linux**: `~/.config/claude/claude_desktop_config.json`
 
 ## 🔧 Environment Variables
 
-- `ASTROVISOR_API_KEY` - Your Astrovisor API key (required) - get it at [astrovisor.io](https://astrovisor.io)
-- `ASTROVISOR_URL` - Astrovisor server URL (default: https://astrovisor.io)
-
-## 📝 Example Usage in Claude
-
-After setup, you can ask Claude:
-
-- "Calculate my natal chart for January 1, 1990 at 12:00 PM in New York"
-- "What astrological tools are available?"
-- "Analyze the compatibility between two people born on different dates"
-- "Find the best time for a wedding in 2025"
-- "Calculate my numerology profile"
-- "What's my Human Design type?"
+- **ASTROVISOR_API_KEY** - Your Astrovisor API key (required)
+- **ASTROVISOR_URL** - API server URL (default: https://astrovisor.io)
 
 ## 🆘 Troubleshooting
 
 ### MCP Server Not Found
-- Make sure Node.js is installed (version 18+)
-- Verify the configuration syntax is correct
-- Restart Claude Desktop after configuration changes
+- Ensure Node.js 18+ is installed
+- Verify configuration syntax
+- Restart Claude Desktop after changes
 
-### Invalid API Key
-- Get your API key from [astrovisor.io](https://astrovisor.io)
-- Ensure the key is properly set in the environment variables
-- Check the key format: should start with `pk-`
-
-### Tools Not Appearing
-- Verify Claude Desktop can access the internet
-- Check Claude Desktop logs for error messages
-- Try running `npx astrovisor-mcp` manually to test
-
-## 🌐 Alternative: HTTP MCP
-
-For web integrations, use our HTTP MCP endpoint:
-
-```
-URL: https://astrovisor.io/mcp
-Headers: Authorization: Bearer your-api-key
-```
+### Invalid API Key  
+- Get your key from [astrovisor.io](https://astrovisor.io)
+- Key should start with `pk-`
+- Set properly in environment variables
 
 ## 📞 Support
 
 - **Website**: [astrovisor.io](https://astrovisor.io)
 - **API Documentation**: [astrovisor.io/docs](https://astrovisor.io/docs)
-- **GitHub Issues**: [github.com/rokoss21/astrovisor-mcp/issues](https://github.com/rokoss21/astrovisor-mcp/issues)
 - **Email**: support@astrovisor.io
-
-## 📄 License
-
-MIT License - see LICENSE file for details.
 
 ## 🌟 Features
 
-- 🔮 **14 Professional Tools**: Complete astrology toolkit including Western, Vedic, and modern systems
-- 🎯 **Easy Setup**: One command installation via npx
+- 🔮 **21 Professional Tools**: Most complete astrology MCP server
+- 🐲 **Full BaZi System**: 15 specialized Chinese astrology tools
+- 🎯 **Easy Setup**: One command installation
 - 🔐 **Secure**: API key authentication
 - 🌍 **Global Access**: Works worldwide via HTTPS
-- 📱 **Modern**: Built with latest MCP protocol
-- ⚡ **Fast**: Optimized for performance with Swiss Ephemeris precision
+- ⚡ **Fast**: Swiss Ephemeris precision
 
-## 🏆 About the Creator
+## 📄 License
 
-Created by **Emil Rokossovskiy** - [GitHub Profile](https://github.com/rokoss21/)
-
-Professional developer specializing in AI integrations and astrological software.
+MIT License - Professional use allowed.
 
 ---
 
-**Get your API key at [astrovisor.io](https://astrovisor.io) and start exploring professional astrology with Claude!** 🌟
+Get your API key at [astrovisor.io](https://astrovisor.io) and explore the most comprehensive astrology system available for Claude! 🌟
 
-## 🌟 NEW: Transits Analysis v1.1.0
-
-### Transit Calculation Features:
-- **Comprehensive Transit Analysis**: All major and minor aspects to natal planets
-- **Planetary Returns Detection**: Automatic detection of planetary returns with precision
-- **Period Tension Scoring**: Algorithmic assessment of challenging vs harmonious influences  
-- **Significance Rating**: Smart filtering of the most important transits
-- **Duration Estimates**: How long each transit influence will last
-- **Detailed Interpretations**: Rich astrological meanings for every transit
-
-### Supported Planets & Weights:
-- **Personal Planets**: Sun (1.0), Moon (0.6), Mercury (0.4), Venus (0.5), Mars (0.7)
-- **Social Planets**: Jupiter (1.2), Saturn (1.3) 
-- **Outer Planets**: Uranus (1.1), Neptune (1.1), Pluto (1.2)
-
-### Example Transit Analysis:
-```bash
-# Ask Claude: "Calculate my transits for August 15, 2024"
-# Returns:
-# - 15 significant transits with interpretations
-# - 3 planetary returns detected
-# - Period tension score: +1.2 (moderately challenging)
-# - Recommendations based on dominant themes
-```
-
-### Advanced Transit Features:
-- **Customizable Orbs**: Adjust aspect orb sensitivity (0.1x to 3.0x)
-- **Significance Filtering**: Focus on most important transits (0.0 to 1.0 scale)
-- **Aspect Types**: Major (conjunction, opposition, square, trine, sextile) + minor aspects
-- **Smart Returns**: Detects when planets return to natal positions within 2° orb
-- **Tension Analysis**: Evaluates overall challenging vs supportive planetary climate
+**Keywords**: mcp, astrology, claude, ai, bazi, chinese-astrology, four-pillars, luck-pillars, symbolic-stars, career-guidance, compatibility, personality-analysis, natal-chart, human-design, numerology, vedic-astrology

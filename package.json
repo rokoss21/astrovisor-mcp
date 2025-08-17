@@ -1,64 +1,61 @@
 {
   "name": "astrovisor-mcp",
-  "version": "1.1.5",
-  "description": "Astrovisor MCP Server - Professional astrology tools for Claude Desktop via MCP protocol. Now with Transits! Created by Emil Rokossovskiy.",
-  "type": "module",
+  "version": "2.2.0",
+  "description": "🌟 Professional astrology tools for Claude Desktop via MCP - Now with complete BaZi Chinese Astrology system!",
   "main": "build/index.js",
   "bin": {
     "astrovisor-mcp": "build/index.js"
   },
+  "type": "module",
   "scripts": {
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
-    "build-http": "tsc src/http-server.ts --outDir build --target es2022 --module nodenext --moduleResolution nodenext --esModuleInterop && chmod +x build/http-server.js",
-    "build-mcp-http": "tsc src/mcp-http-server.ts --outDir build --target es2022 --module nodenext --moduleResolution nodenext --esModuleInterop && chmod +x build/mcp-http-server.js",
-    "dev": "tsc --watch",
     "start": "node build/index.js",
-    "prepare": "npm run build",
-    "test": "echo \"Tests will be added soon\" && exit 0"
+    "dev": "npm run build && npm start",
+    "test": "node test-production.cjs"
   },
-  "files": [
-    "build/",
-    "README.md",
-    "LICENSE"
-  ],
   "keywords": [
     "mcp",
     "astrology",
     "claude",
     "ai",
+    "bazi",
+    "chinese-astrology",
+    "four-pillars",
+    "human-design",
     "numerology", 
+    "matrix-of-destiny",
     "vedic-astrology",
     "natal-chart",
     "horoscope",
     "astrovisor",
-    "human-design",
     "tarot",
-    "astrocartography"
+    "astrocartography",
+    "transits",
+    "compatibility",
+    "personality-analysis"
   ],
-  "author": {
-    "name": "Emil Rokossovskiy",
-    "url": "https://github.com/rokoss21/",
-    "email": "support@astrovisor.io"
-  },
+  "author": "Emil Rokossovskiy <emil@astrovisor.io>",
   "license": "MIT",
-  "homepage": "https://astrovisor.io",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rokoss21/astrovisor-mcp"
+    "url": "https://github.com/rokoss21/astrovisor-mcp.git"
   },
-  "bugs": {
-    "url": "https://github.com/rokoss21/astrovisor-mcp/issues"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "homepage": "https://astrovisor.io",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.5.0",
-    "axios": "^1.6.0",
-    "zod": "^3.22.0"
+    "@modelcontextprotocol/sdk": "^0.8.0",
+    "axios": "^1.7.2",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
-  }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "build/",
+    "README.md",
+    "LICENSE"
+  ]
 }
