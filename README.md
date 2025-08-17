@@ -2,7 +2,7 @@
 
 Professional astrology tools for Claude Desktop via the Model Context Protocol (MCP).
 
-🆕 **NEW in v2.3.0**: Complete **Progressions System** with **7 specialized tools** including Secondary, Solar Arc, and Tertiary progressions for precise life timing and developmental analysis!
+🆕 **NEW in v2.3.1**: Complete **Progressions System** with **7 specialized tools** including Secondary, Solar Arc, and Tertiary progressions for precise life timing and developmental analysis!
 
 ✨ Also includes complete **BaZi (Chinese Astrology)** system with **15 specialized tools** including Four Pillars, Luck Pillars, Symbolic Stars, career guidance, and comprehensive life analysis!
 
@@ -20,7 +20,7 @@ Add to your Claude Desktop config:
   "mcpServers": {
     "astrovisor": {
       "command": "npx",
-      "args": ["-y", "astrovisor-mcp@2.3.0"],
+      "args": ["-y", "astrovisor-mcp@2.3.1"],
       "env": {
         "ASTROVISOR_API_KEY": "your-api-key-here",
         "ASTROVISOR_URL": "https://astrovisor.io"
@@ -42,7 +42,7 @@ Then use in Claude Desktop config:
 {
   "mcpServers": {
     "astrovisor": {
-      "command": "astrovisor-mcp@2.3.0",
+      "command": "astrovisor-mcp@2.3.1",
       "env": {
         "ASTROVISOR_API_KEY": "your-api-key-here",
         "ASTROVISOR_URL": "https://astrovisor.io"
@@ -294,7 +294,7 @@ Created by **Emil Rokossovskiy** - [GitHub Profile](https://github.com/rokoss21/
 
 Professional developer specializing in AI integrations and astrological software.
 
-## 🌙 NEW: Complete Progressions System v2.3.0
+## 🌙 NEW: Complete Progressions System v2.3.1
 
 ### What Makes Our Progressions System Revolutionary:
 
