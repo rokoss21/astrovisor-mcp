@@ -48,6 +48,9 @@ coverage/
 ehthumbs.db
 Thumbs.db
 
+# Crush directory
+.crush/
+
 # Temporary files
 tmp/
 temp/
