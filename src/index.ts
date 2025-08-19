@@ -825,11 +825,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       // === OTHER SYSTEMS ===
       case "calculate_human_design":
-        endpoint = '/api/human-design/calculate';
+        endpoint = '/api/human_design/calculate';
         requestData = args;
         break;
       case "get_human_design_info":
-        endpoint = '/api/human-design/info';
+        endpoint = '/api/human_design/info';
         method = 'GET';
         requestData = {};
         break;
