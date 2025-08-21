@@ -1,7 +1,7 @@
 {
   "name": "astrovisor-mcp",
-  "version": "2.4.1",
-  "description": "🌟 Professional astrology tools for Claude Desktop via MCP - Now with complete BaZi Chinese Astrology system!",
+  "version": "3.0.0",
+  "description": "🌟 Complete professional astrology MCP server with 45 tools covering all 55 backend endpoints - Full coverage of natal charts, BaZi, Jyotish, progressions, transits, relationships, astrocartography, electional, horary, Human Design, numerology, and Matrix of Destiny!",
   "main": "build/index.js",
   "bin": {
     "astrovisor-mcp": "build/index.js"

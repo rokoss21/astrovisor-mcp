@@ -63,10 +63,24 @@ user-config*.json
 claude_desktop_config*.json
 ecosystem.config.*
 
-# Test files
+# Test files and development artifacts
 test_*.py
+test_*.js
+test-*.js
 *debug*
 *.backup
+*.draft.md
+NOTES.md
+TODO.md
+
+# Documentation working files
+*.md.backup
+CHANGELOG.draft.md
 
 # MCP specific
 mcp-http.log
+
+# Development and working files
+universal_*.py
+analyze_*.py
+updated_*.js

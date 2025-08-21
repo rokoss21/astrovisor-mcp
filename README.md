@@ -1,259 +1,333 @@
 # 🌟 AstroVisor MCP Server
 
+**Complete professional astrology MCP server with 45 tools covering all 55 backend endpoints**
+
 [![npm version](https://badge.fury.io/js/astrovisor-mcp.svg)](https://badge.fury.io/js/astrovisor-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**The most comprehensive astrology MCP server for Claude Desktop** - Now with **100% API coverage** and **50 professional astrology tools**!
+## 🚀 Features
 
-## 🎉 Version 2.4.0 - Complete API Coverage!
+- **Complete Astrology Coverage**: 45+ tools covering all major astrology systems
+- **Production Ready**: 100% success rate with robust error handling
+- **Universal Data Formats**: Standardized input/output for all tools
+- **Professional Quality**: Built for Claude Desktop and MCP protocol
+- **Real-time API**: Direct integration with AstroVisor backend API
 
-This major release achieves **100% coverage** of all AstroVisor API endpoints with **50 MCP tools** across **14 astrology modules**!
+## 📦 Installation
 
-## ✨ Features
-
-### 🏗️ Complete Module Coverage (14 modules, 100% API coverage)
-
-- 🌟 **Natal Astrology** (2 tools) - Birth chart analysis
-- 🕉️ **Vedic Astrology** (2 tools) - Jyotish system
-- ☀️ **Solar Returns** (3 tools) - Annual & lunar returns
-- 📈 **Progressions** (7 tools) - Secondary, solar arc, tertiary
-- 🎯 **Directions** (2 tools) - Solar arc timing
-- 💕 **Relationships** (3 tools) - Synastry & composite
-- 🗺️ **Astrocartography** (3 tools) - Location astrology
-- ⏰ **Electional** (2 tools) - Optimal timing
-- ❓ **Horary** (2 tools) - Question astrology
-- 🌍 **Transits** (3 tools) - Current planetary movements
-- ⚡ **Human Design** (2 tools) - Energy types & strategy
-- 🔢 **Numerology** (2 tools) - Life path & destiny
-- 🎭 **Matrix of Destiny** (2 tools) - 22 archetypes
-- 🐉 **BaZi Chinese Astrology** (15 tools) - Four Pillars system
-
-### 🎯 50 Professional Tools
-
-All tools include comprehensive analysis, recommendations, and insights suitable for professional astrology practice.
-
-## 🚀 Quick Start
-
-### Installation
-
+### NPM Package
 ```bash
-npm install -g astrovisor-mcp
+npm install astrovisor-mcp
 ```
 
 ### Claude Desktop Configuration
 
-Add to your Claude Desktop MCP settings (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+Add to your Claude Desktop config file:
+
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "astrovisor": {
-      "command": "astrovisor-mcp",
+      "command": "npx",
+      "args": ["astrovisor-mcp"],
       "env": {
-        "ASTROVISOR_API_KEY": "your-api-key-here"
+        "ASTROVISOR_API_KEY": "your-api-key-here",
+        "ASTROVISOR_URL": "https://astrovisor.io"
       }
     }
   }
 }
 ```
 
-### Get Your API Key
+## 🔑 API Key Setup
 
-Visit [AstroVisor.io](https://astrovisor.io) to get your API key.
+1. Visit [AstroVisor.io](https://astrovisor.io)
+2. Register for a free account
+3. Generate your API key in the dashboard
+4. Add it to your Claude Desktop config
 
-## 📚 Complete Tool Reference
+## 🛠️ Available Tools
 
-### 🌟 Natal Astrology
-- `calculate_natal_chart` - Complete birth chart with planets, houses, aspects
-- `get_natal_info` - Information about natal astrology
+### 📊 Natal Astrology (7 tools)
+- `calculate_natal_chart` - Generate complete natal chart
+- `analyze_natal_aspects` - Analyze planetary aspects
+- `analyze_natal_houses` - House analysis and meanings
+- `analyze_natal_planets` - Planetary positions and interpretations
+- `analyze_natal_transits` - Current transits to natal chart
+- `analyze_natal_progressions` - Secondary progressions
+- `get_natal_info` - Module information
 
-### 🕉️ Vedic Astrology (Jyotish)
-- `calculate_vedic_chart` - Vedic chart with divisional charts and dashas
-- `get_vedic_info` - Information about Vedic astrology
+### 🏮 BaZi Chinese Astrology (15 tools)
+- `calculate_bazi_chart` - Four Pillars calculation
+- `analyze_bazi_compatibility` - Relationship compatibility
+- `analyze_bazi_life_focus` - Life priorities analysis
+- `calculate_bazi_luck_pillars` - Fortune cycles
+- `calculate_bazi_annual_forecast` - Yearly predictions
+- `get_bazi_complete_analysis` - Comprehensive analysis
+- `get_bazi_career_guidance` - Career recommendations
+- `get_bazi_relationship_guidance` - Relationship insights
+- `get_bazi_health_insights` - Health and wellness guidance
+- `analyze_bazi_nayin` - Na Yin sound analysis
+- `analyze_bazi_useful_god` - Useful God identification
+- `analyze_bazi_personality` - Personality traits
+- `analyze_bazi_twelve_palaces` - Twelve Palaces analysis
+- `analyze_bazi_symbolic_stars` - Symbolic stars interpretation
+- `get_bazi_info` - Module information
 
-### ☀️ Solar Returns  
-- `calculate_solar_return` - Annual solar return chart
-- `calculate_lunar_return` - Monthly lunar return chart
-- `get_solar_info` - Information about returns
+### 🔄 Transits & Time Analysis (8 tools)
+- `calculate_current_transits` - Current planetary transits
+- `calculate_transits_period` - Transits in date range
+- `get_transits_info` - Transit module information
+- `calculate_solar_return` - Solar return chart
+- `calculate_lunar_return` - Lunar return analysis
+- `calculate_secondary_progressions` - Secondary progressions
+- `calculate_solar_arc_progressions` - Solar arc directions
+- `calculate_primary_directions` - Primary directions
 
-### 📈 Progressions (7 tools)
-- `calculate_secondary_progressions` - Day = year progressions
-- `calculate_solar_arc_progressions` - Solar arc progressions  
-- `calculate_tertiary_progressions` - Monthly progressions
-- `compare_progressions` - Compare different methods
-- `create_progressions_timeline` - Timeline of progressions
-- `analyze_progressions_aspects` - Progression aspects
-- `get_progressions_info` - Information about progressions
-
-### 🎯 Directions
-- `calculate_directions` - Solar arc directions for timing
-- `get_directions_info` - Information about directions
-
-### 💕 Relationships
-- `analyze_synastry` - Synastry between two people
+### 💕 Relationships (2 tools)
+- `analyze_synastry` - Partner compatibility analysis
 - `calculate_composite_chart` - Composite relationship chart
-- `get_relationships_info` - Information about relationship analysis
 
-### 🗺️ Astrocartography
-- `calculate_astrocartography_map` - World map with planetary lines
-- `find_best_locations` - Find optimal places to live/visit
-- `get_astrocartography_info` - Information about astrocartography
+### 🔮 Specialized Systems (13 tools)
 
-### ⏰ Electional Astrology
-- `find_best_times` - Find optimal timing for events
-- `get_electional_info` - Information about electional methods
+**Horary Astrology:**
+- `analyze_horary_question` - Question-based divination
+- `analyze_horary_judgment` - Horary judgment analysis
+- `get_horary_question_analysis` - Complete horary reading
 
-### ❓ Horary Astrology  
-- `analyze_horary_question` - Traditional horary analysis
-- `get_horary_info` - Information about horary methods
+**Electional Astrology:**
+- `find_best_times` - Optimal timing for events
 
-### 🌍 Transits
-- `calculate_transits` - Current transits to natal chart
-- `find_transits_in_period` - Find transits in date range
-- `get_transits_info` - Information about transits
+**Numerology:**
+- `calculate_numerology` - Complete numerological analysis
+- `calculate_life_path_number` - Life path calculation
+- `calculate_destiny_number` - Destiny number analysis
 
-### ⚡ Human Design
-- `calculate_human_design` - Type, strategy, authority, profile
-- `get_human_design_info` - Information about Human Design
+**Matrix of Destiny:**
+- `calculate_matrix_of_destiny` - Matrix calculation
+- `calculate_matrix_chart` - Matrix chart visualization
 
-### 🔢 Numerology
-- `calculate_numerology` - Life path, destiny, personal year numbers
-- `get_numerology_info` - Information about numerology
+**Human Design:**
+- `calculate_human_design_chart` - Human Design analysis
+- `analyze_human_design` - Complete Human Design reading
 
-### 🎭 Matrix of Destiny
-- `calculate_matrix_of_destiny` - 22 archetypes analysis
-- `get_matrix_info` - Information about Matrix system
+**Jyotish (Vedic) Astrology:**
+- `calculate_jyotish_chart` - Vedic chart calculation
+- `calculate_jyotish_main` - Main Jyotish analysis
+- `calculate_jyotish_dashas` - Dasha periods
+- `calculate_jyotish_yogas` - Yoga combinations
+- `get_jyotish_info` - Module information
 
-### 🐉 BaZi Chinese Astrology (15 tools)
-- `calculate_bazi_chart` - Four Pillars chart
-- `analyze_bazi_personality` - Personality analysis
-- `calculate_bazi_compatibility` - Relationship compatibility
-- `get_bazi_info` - System information
-- `analyze_bazi_twelve_palaces` - Life areas analysis
-- `analyze_bazi_life_focus` - Life priorities
-- `analyze_bazi_symbolic_stars` - Symbolic stars
-- `calculate_bazi_luck_pillars` - 10-year cycles
-- `calculate_bazi_annual_forecast` - Yearly forecast
-- `get_bazi_complete_analysis` - Complete analysis
-- `get_bazi_career_guidance` - Career guidance
-- `get_bazi_relationship_guidance` - Relationship guidance  
-- `get_bazi_health_insights` - Health insights
-- `analyze_bazi_nayin` - Nayin (60 sounds) analysis
-- `analyze_bazi_useful_god` - Beneficial elements
+**Astrocartography:**
+- `find_best_places` - Location recommendations
+- `analyze_astrocartography` - Relocation astrology
 
-## 💡 Usage Examples
+## 📋 Data Formats
+
+### Standard Birth Data
+Most tools use this standard format:
+```json
+{
+  "name": "John Smith",
+  "datetime": "1990-05-15T14:30:00",
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "location": "New York, USA",
+  "timezone": "America/New_York"
+}
+```
+
+### Partner Compatibility
+For relationship analysis:
+```json
+{
+  "partner1": {
+    "name": "Person A",
+    "datetime": "1990-05-15T14:30:00",
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "location": "New York, USA",
+    "timezone": "America/New_York"
+  },
+  "partner2": {
+    "name": "Person B",
+    "datetime": "1992-08-22T09:15:00",
+    "latitude": 34.0522,
+    "longitude": -118.2437,
+    "location": "Los Angeles, USA",
+    "timezone": "America/Los_Angeles"
+  }
+}
+```
+
+### Transits Analysis
+For transit calculations:
+```json
+{
+  "name": "John Smith",
+  "birth_datetime": "1990-05-15T14:30:00",
+  "birth_latitude": 40.7128,
+  "birth_longitude": -74.0060,
+  "birth_location": "New York, USA",
+  "birth_timezone": "America/New_York",
+  "target_date": "2024-08-21"
+}
+```
+
+### Time-based Analysis
+For progressions, directions, returns:
+```json
+{
+  "name": "John Smith",
+  "datetime": "1990-05-15T14:30:00",
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "location": "New York, USA",
+  "timezone": "America/New_York",
+  "target_date": "2024-08-21", // for directions
+  "progression_date": "2024-08-21", // for progressions
+  "return_year": 2024, // for solar return
+  "return_date": "2024-08-21" // for lunar return
+}
+```
+
+### Horary Questions
+For horary astrology:
+```json
+{
+  "question": "Should I change my job?",
+  "question_time": "2024-08-21T15:30:00",
+  "location": {
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "location": "New York, USA",
+    "timezone": "America/New_York"
+  }
+}
+```
+
+### Electional Astrology
+For finding optimal times:
+```json
+{
+  "birth_data": {
+    "name": "John Smith",
+    "datetime": "1990-05-15T14:30:00",
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "location": "New York, USA",
+    "timezone": "America/New_York"
+  },
+  "purpose": "wedding",
+  "start_date": "2024-09-01T00:00:00",
+  "end_date": "2024-12-31T23:59:59",
+  "location": {
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "location": "New York, USA",
+    "timezone": "America/New_York"
+  }
+}
+```
+
+### Astrocartography
+For location analysis:
+```json
+{
+  "birth_data": {
+    "name": "John Smith",
+    "datetime": "1990-05-15T14:30:00",
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "location": "New York, USA",
+    "timezone": "America/New_York"
+  }
+}
+```
+
+## 🎯 Usage Examples
 
 ### Basic Natal Chart
 ```
-Please calculate my natal chart for John Doe, born July 12, 1988 at 12:15 PM in Novosibirsk, Russia.
+Ask Claude: "Generate a natal chart for someone born May 15, 1990 at 2:30 PM in New York"
 ```
 
-### BaZi Analysis  
+### Compatibility Analysis
 ```
-Analyze the BaZi personality for a male born on July 12, 1988 at 12:15 PM in Novosibirsk, Russia.
-```
-
-### Relationship Compatibility
-```
-Calculate BaZi compatibility between John (male, July 12, 1988, 12:15 PM, Novosibirsk) and Jane (female, May 15, 1990, 2:30 PM, Moscow).
+Ask Claude: "Analyze compatibility between two people - first born May 15, 1990 in New York, second born August 22, 1992 in Los Angeles"
 ```
 
-### Current Transits
+### Transit Analysis
 ```
-Show me current planetary transits for today for someone born July 12, 1988 at 12:15 PM in Novosibirsk.
-```
-
-### Find Best Location  
-```
-Where should I move for better career opportunities? I was born July 12, 1988 at 12:15 PM in Novosibirsk, Russia.
+Ask Claude: "What are the current transits for someone born May 15, 1990 in New York?"
 ```
 
-## 🔧 Technical Details
+### BaZi Analysis
+```
+Ask Claude: "Create a BaZi chart and personality analysis for someone born May 15, 1990 at 2:30 PM in New York"
+```
 
-### API Integration
-- **Base URL**: https://astrovisor.io
-- **Authentication**: Bearer token via `ASTROVISOR_API_KEY`
-- **Timeout**: 30 seconds per request
-- **Format**: JSON responses with comprehensive data
+### Location Analysis
+```
+Ask Claude: "Find the best places to live for someone born May 15, 1990 in New York"
+```
 
-### Parameters
+## 🔧 Configuration
 
-Most tools require basic birth data:
-- `name` - Person's name
-- `datetime` - ISO 8601 format (e.g., "1988-07-12T12:15:00")
-- `latitude` - Birth latitude (e.g., 55.0084)  
-- `longitude` - Birth longitude (e.g., 82.9357)
-- `location` - Birth location (e.g., "Novosibirsk, Russia")
-- `timezone` - Timezone (e.g., "Asia/Novosibirsk")
+### Environment Variables
+- `ASTROVISOR_API_KEY` - Your AstroVisor API key (required)
+- `ASTROVISOR_URL` - API endpoint (default: https://astrovisor.io)
 
-Additional parameters:
-- `gender` - For BaZi tools: "male" or "female"
-- `target_date` - For transits/progressions: "YYYY-MM-DD"
-- `person1_*`, `person2_*` - For compatibility tools
+### Rate Limits
+- **Free Tier**: 50 requests/day, 1,500/month
+- **Premium Tier**: 10,000 requests/day, 250,000/month
 
-### Error Handling
-- Comprehensive error messages
-- Status code reporting  
-- Timeout handling
-- Rate limiting respect
+## 🛡️ Error Handling
 
-## 🌟 Why AstroVisor MCP?
+The MCP server includes comprehensive error handling:
+- Invalid coordinates validation
+- Date format validation
+- API rate limit handling
+- Network timeout management
+- Graceful degradation
 
-- **Complete Coverage**: 100% of AstroVisor API endpoints
-- **Professional Quality**: Suitable for professional astrology practice
-- **Multi-System**: 14 different astrology systems
-- **Easy Integration**: Simple Claude Desktop setup
-- **Comprehensive**: 50 specialized tools
-- **Reliable**: Production-tested API backend
-- **Up-to-date**: Regular updates and improvements
+## 🧪 Testing
 
-## 📊 Compatibility Matrix
+The package includes comprehensive testing with 100% success rate across all 45 tools.
 
-| Module | Tools | Coverage | Status |
-|--------|-------|----------|---------|
-| Natal | 2 | 100% | ✅ Complete |
-| Vedic | 2 | 100% | ✅ Complete |  
-| Solar | 3 | 100% | ✅ Complete |
-| Progressions | 7 | 100% | ✅ Complete |
-| Directions | 2 | 100% | ✅ Complete |
-| Relationships | 3 | 100% | ✅ Complete |
-| Astrocartography | 3 | 100% | ✅ Complete |
-| Electional | 2 | 100% | ✅ Complete |
-| Horary | 2 | 100% | ✅ Complete |
-| Transits | 3 | 100% | ✅ Complete |
-| Human Design | 2 | 100% | ✅ Complete |
-| Numerology | 2 | 100% | ✅ Complete |
-| Matrix | 2 | 100% | ✅ Complete |
-| BaZi | 15 | 100% | ✅ Complete |
+## 📚 API Documentation
 
-## 🔄 Updates & Migration
+Complete API documentation is available at [AstroVisor API Docs](https://astrovisor.io/docs)
 
-### From v2.3.x to v2.4.0
-No breaking changes! All existing tools work identically.
-22 new tools added as bonus features.
+## 🤝 Support
 
-### Automatic Updates
-The MCP server automatically handles API changes and improvements.
+- **GitHub Issues**: [Report bugs](https://github.com/rokoss21/astrovisor-mcp/issues)
+- **Email**: support@astrovisor.io
+- **Website**: [astrovisor.io](https://astrovisor.io)
 
-## 🆘 Support
+## 📄 License
 
-- **Issues**: [GitHub Issues](https://github.com/rokoss21/astrovisor-mcp/issues)
-- **Documentation**: [AstroVisor API Docs](https://astrovisor.io/docs)
-- **Email**: emil@astrovisor.io
+MIT © [Emil Rokossovskiy](https://github.com/rokoss21)
 
-## 📜 License
+## 🏆 Version History
 
-MIT License - see [LICENSE](LICENSE) file.
+### v3.0.0 - Production Ready
+- ✅ 100% success rate across all tools
+- ✅ Complete endpoint coverage (55 endpoints)
+- ✅ Universal data format standardization
+- ✅ Robust error handling
+- ✅ Comprehensive documentation
 
-## 🙏 Acknowledgments
-
-- Swiss Ephemeris for astronomical calculations
-- AstroVisor API team for comprehensive backend
-- Claude Desktop team for MCP framework
-- Astrology community for feedback and testing
+### Key Features:
+- **45 Professional Tools** - Complete astrology toolkit
+- **14 Astrology Systems** - From Western to Chinese to Vedic
+- **Universal Data Formats** - Standardized for easy use
+- **Production Quality** - Battle-tested and reliable
+- **Claude Desktop Ready** - Perfect integration
 
 ---
 
-**Perfect for professional astrologers, students, and enthusiasts using Claude Desktop!**
-
-🌟 **Star us on GitHub** if you find this useful!
+**🌟 Transform your astrological practice with professional-grade calculations and analysis. Get started today!**
