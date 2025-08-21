@@ -33,6 +33,38 @@ const birthDataSchema = {
   timezone: { type: "string", description: "Timezone", example: "America/New_York" }
 };
 
+// Transits schema with birth_ prefixes
+const transitsSchema = {
+  name: { type: "string", description: "Person's name" },
+  birth_datetime: { type: "string", description: "Birth date and time (ISO 8601 format)", example: "1990-05-15T14:30:00" },
+  birth_latitude: { type: "number", description: "Birth latitude", example: 40.7128 },
+  birth_longitude: { type: "number", description: "Birth longitude", example: -74.0060 },
+  birth_location: { type: "string", description: "Birth location", example: "New York, USA" },
+  birth_timezone: { type: "string", description: "Timezone", example: "America/New_York" },
+  target_date: { type: "string", description: "Target date for transits (YYYY-MM-DD)", example: "2024-08-21" },
+  orb_factor: { type: "number", description: "Orb multiplier", example: 1.0, default: 1.0 },
+  min_significance: { type: "number", description: "Minimum significance", example: 0.5, default: 0.5 },
+  include_minor_aspects: { type: "boolean", description: "Include minor aspects", default: true }
+};
+
+// Horary schema with correct LocationData format
+const horarySchema = {
+  question: { type: "string", description: "The horary question" },
+  question_time: { type: "string", description: "Time when question was asked (ISO 8601)" },
+  location: {
+    type: "object",
+    properties: {
+      latitude: { type: "number", description: "Location latitude" },
+      longitude: { type: "number", description: "Location longitude" },
+      location: { type: "string", description: "Location name" },
+      timezone: { type: "string", description: "Timezone", example: "Europe/Moscow" }
+    },
+    required: ["latitude", "longitude", "location", "timezone"]
+  },
+  querent_name: { type: "string", description: "Name of querent", default: "Querent" },
+  question_category: { type: "string", description: "Question category", default: "other" }
+};
+
 const relationshipSchema = {
   partner1: {
     type: "object",
@@ -273,8 +305,8 @@ const tools = [
     description: "🌍 Calculate current planetary transits and their effects",
     inputSchema: {
       type: "object",
-      properties: birthDataSchema,
-      required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
+      properties: transitsSchema,
+      required: ["name", "birth_datetime", "birth_latitude", "birth_longitude", "birth_location", "birth_timezone", "target_date"]
     }
   },
   {
@@ -283,11 +315,18 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        ...birthDataSchema,
+        name: { type: "string", description: "Person's name" },
+        birth_datetime: { type: "string", description: "Birth date and time (ISO 8601 format)", example: "1990-05-15T14:30:00" },
+        birth_latitude: { type: "number", description: "Birth latitude", example: 40.7128 },
+        birth_longitude: { type: "number", description: "Birth longitude", example: -74.0060 },
+        birth_location: { type: "string", description: "Birth location", example: "New York, USA" },
+        birth_timezone: { type: "string", description: "Timezone", example: "America/New_York" },
         start_date: { type: "string", description: "Start date (YYYY-MM-DD)", example: "2024-01-01" },
-        end_date: { type: "string", description: "End date (YYYY-MM-DD)", example: "2024-12-31" }
+        end_date: { type: "string", description: "End date (YYYY-MM-DD)", example: "2024-12-31" },
+        min_significance: { type: "number", description: "Minimum significance", example: 0.5, default: 0.5 },
+        max_days: { type: "number", description: "Maximum days to analyze", example: 365, default: 365 }
       },
-      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "start_date", "end_date"]
+      required: ["name", "birth_datetime", "birth_latitude", "birth_longitude", "birth_location", "birth_timezone", "start_date", "end_date"]
     }
   },
   {
@@ -392,18 +431,7 @@ const tools = [
     description: "❓ Analyze horary question for specific answers",
     inputSchema: {
       type: "object",
-      properties: {
-        question: { type: "string", description: "The question to analyze" },
-        question_time: { type: "string", description: "Time when question was asked (ISO 8601)" },
-        location: {
-          type: "object",
-          properties: {
-            latitude: { type: "number", description: "Location latitude" },
-            longitude: { type: "number", description: "Location longitude" },
-            name: { type: "string", description: "Location name" }
-          }
-        }
-      },
+      properties: horarySchema,
       required: ["question", "question_time", "location"]
     }
   },
@@ -412,18 +440,7 @@ const tools = [
     description: "⚖️ Get horary judgment and interpretation",
     inputSchema: {
       type: "object",
-      properties: {
-        question: { type: "string", description: "The question to analyze" },
-        question_time: { type: "string", description: "Time when question was asked (ISO 8601)" },
-        location: {
-          type: "object",
-          properties: {
-            latitude: { type: "number", description: "Location latitude" },
-            longitude: { type: "number", description: "Location longitude" },
-            name: { type: "string", description: "Location name" }
-          }
-        }
-      },
+      properties: horarySchema,
       required: ["question", "question_time", "location"]
     }
   },
@@ -432,18 +449,7 @@ const tools = [
     description: "🔍 Get detailed horary question analysis",
     inputSchema: {
       type: "object",
-      properties: {
-        question: { type: "string", description: "The question to analyze" },
-        question_time: { type: "string", description: "Time when question was asked (ISO 8601)" },
-        location: {
-          type: "object",
-          properties: {
-            latitude: { type: "number", description: "Location latitude" },
-            longitude: { type: "number", description: "Location longitude" },
-            name: { type: "string", description: "Location name" }
-          }
-        }
-      },
+      properties: horarySchema,
       required: ["question", "question_time", "location"]
     }
   },
@@ -455,12 +461,30 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        ...birthDataSchema,
-        event_type: { type: "string", description: "Type of event", example: "wedding" },
-        start_date: { type: "string", description: "Search start date (YYYY-MM-DD)" },
-        end_date: { type: "string", description: "Search end date (YYYY-MM-DD)" }
+        birth_data: {
+          type: "object",
+          properties: birthDataSchema,
+          required: ["name", "datetime", "latitude", "longitude", "location", "timezone"]
+        },
+        purpose: { type: "string", description: "Purpose of event", example: "wedding" },
+        start_date: { type: "string", description: "Search start date (ISO 8601)", example: "2024-09-01T00:00:00" },
+        end_date: { type: "string", description: "Search end date (ISO 8601)", example: "2024-12-31T23:59:59" },
+        location: {
+          type: "object",
+          properties: {
+            latitude: { type: "number", description: "Event location latitude" },
+            longitude: { type: "number", description: "Event location longitude" },
+            location: { type: "string", description: "Event location name" },
+            timezone: { type: "string", description: "Event location timezone" }
+          },
+          required: ["latitude", "longitude", "location", "timezone"]
+        },
+        preferred_planets: { type: "array", items: { type: "string" }, description: "Preferred planets" },
+        avoid_planets: { type: "array", items: { type: "string" }, description: "Planets to avoid" },
+        moon_phase: { type: "string", description: "Preferred moon phase" },
+        day_of_week: { type: "string", description: "Preferred day of week" }
       },
-      required: ["name", "datetime", "latitude", "longitude", "location", "timezone", "event_type", "start_date", "end_date"]
+      required: ["birth_data", "purpose", "start_date", "end_date", "location"]
     }
   },
 

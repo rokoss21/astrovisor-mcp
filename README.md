@@ -452,23 +452,70 @@ All 45 MCP tools map directly to backend API endpoints:
   "location": {
     "latitude": 40.7128,
     "longitude": -74.0060,
-    "name": "New York, USA"
-  }
+    "location": "New York, USA",
+    "timezone": "America/New_York"
+  },
+  "querent_name": "John Smith",
+  "question_category": "career"
+}
+```
+
+#### Current Transits
+```json
+{
+  "name": "John Smith",
+  "birth_datetime": "1990-05-15T14:30:00",
+  "birth_latitude": 40.7128,
+  "birth_longitude": -74.0060,
+  "birth_location": "New York, USA",
+  "birth_timezone": "America/New_York",
+  "target_date": "2024-08-21",
+  "orb_factor": 1.0,
+  "min_significance": 0.5,
+  "include_minor_aspects": true
+}
+```
+
+#### Transits Period
+```json
+{
+  "name": "John Smith",
+  "birth_datetime": "1990-05-15T14:30:00",
+  "birth_latitude": 40.7128,
+  "birth_longitude": -74.0060,
+  "birth_location": "New York, USA",
+  "birth_timezone": "America/New_York",
+  "start_date": "2024-01-01",
+  "end_date": "2024-12-31",
+  "min_significance": 0.5,
+  "max_days": 365
 }
 ```
 
 #### Electional Astrology
 ```json
 {
-  "name": "John Smith",
-  "datetime": "1990-05-15T14:30:00",
-  "latitude": 40.7128,
-  "longitude": -74.0060,
-  "location": "New York, USA",
-  "timezone": "America/New_York",
-  "event_type": "wedding",
-  "start_date": "2024-09-01",
-  "end_date": "2024-12-31"
+  "birth_data": {
+    "name": "John Smith",
+    "datetime": "1990-05-15T14:30:00",
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "location": "New York, USA",
+    "timezone": "America/New_York"
+  },
+  "purpose": "wedding",
+  "start_date": "2024-09-01T00:00:00",
+  "end_date": "2024-12-31T23:59:59",
+  "location": {
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "location": "New York, USA",
+    "timezone": "America/New_York"
+  },
+  "preferred_planets": ["Venus", "Jupiter"],
+  "avoid_planets": ["Mars", "Saturn"],
+  "moon_phase": "waxing",
+  "day_of_week": "Friday"
 }
 ```
 
