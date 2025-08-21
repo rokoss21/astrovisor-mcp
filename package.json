@@ -1,6 +1,6 @@
 {
   "name": "astrovisor-mcp",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "🌟 Complete professional astrology MCP server with 45 tools covering all 55 backend endpoints - Full coverage of natal charts, BaZi, Jyotish, progressions, transits, relationships, astrocartography, electional, horary, Human Design, numerology, and Matrix of Destiny!",
   "main": "build/index.js",
   "bin": {
