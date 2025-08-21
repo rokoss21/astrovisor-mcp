@@ -298,7 +298,199 @@ The MCP server includes comprehensive error handling:
 
 The package includes comprehensive testing with 100% success rate across all 45 tools.
 
-## 📚 API Documentation
+## 📚 Complete API Reference
+
+### Tool to Endpoint Mapping
+
+All 45 MCP tools map directly to backend API endpoints:
+
+#### 🌟 Natal Astrology
+- `calculate_natal_chart` → `POST /api/natal/chart`
+- `analyze_natal_aspects` → `POST /api/natal/aspects`
+- `analyze_natal_houses` → `POST /api/natal/houses`
+- `analyze_natal_planets` → `POST /api/natal/planets`
+- `analyze_natal_transits` → `POST /api/natal/transits`
+- `analyze_natal_progressions` → `POST /api/natal/progressions`
+- `get_natal_info` → `GET /api/natal/info`
+
+#### 🐉 BaZi Chinese Astrology
+- `calculate_bazi_chart` → `POST /api/bazi/chart`
+- `analyze_bazi_compatibility` → `POST /api/bazi/compatibility`
+- `analyze_bazi_life_focus` → `POST /api/bazi/life-focus`
+- `calculate_bazi_luck_pillars` → `POST /api/bazi/luck-pillars`
+- `calculate_bazi_annual_forecast` → `POST /api/bazi/annual-forecast`
+- `get_bazi_complete_analysis` → `POST /api/bazi/complete-analysis`
+- `get_bazi_career_guidance` → `POST /api/bazi/career-guidance`
+- `get_bazi_relationship_guidance` → `POST /api/bazi/relationship-guidance`
+- `get_bazi_health_insights` → `POST /api/bazi/health-insights`
+- `analyze_bazi_nayin` → `POST /api/bazi/nayin-analysis`
+- `analyze_bazi_useful_god` → `POST /api/bazi/useful-god`
+- `analyze_bazi_personality` → `POST /api/bazi/personality`
+- `analyze_bazi_twelve_palaces` → `POST /api/bazi/twelve-palaces`
+- `analyze_bazi_symbolic_stars` → `POST /api/bazi/symbolic-stars`
+- `get_bazi_info` → `GET /api/bazi/info`
+
+#### 🌍 Transits & Time Analysis
+- `calculate_current_transits` → `POST /api/transits/calculate`
+- `calculate_transits_period` → `POST /api/transits/period`
+- `get_transits_info` → `GET /api/transits/info`
+- `calculate_solar_return` → `POST /api/solar/return`
+- `calculate_lunar_return` → `POST /api/solar/lunar-return`
+- `calculate_secondary_progressions` → `POST /api/progressions/secondary`
+- `calculate_solar_arc_progressions` → `POST /api/progressions/solar-arc`
+- `calculate_primary_directions` → `POST /api/directions/primary`
+
+#### 💕 Relationships
+- `analyze_synastry` → `POST /api/relationship/synastry`
+- `calculate_composite_chart` → `POST /api/relationship/composite`
+
+#### ❓ Horary Astrology
+- `analyze_horary_question` → `POST /api/horary/analyze-question`
+- `analyze_horary_judgment` → `POST /api/horary/judgment`
+- `get_horary_question_analysis` → `POST /api/horary/question`
+
+#### ⏰ Electional Astrology
+- `find_best_times` → `POST /api/electional/find-best-times`
+
+#### 🔢 Numerology
+- `calculate_numerology` → `POST /api/numerology/calculate`
+- `calculate_life_path_number` → `POST /api/numerology/life-path`
+- `calculate_destiny_number` → `POST /api/numerology/destiny-number`
+
+#### 🎴 Matrix of Destiny
+- `calculate_matrix_of_destiny` → `POST /api/matrix/calculate`
+- `calculate_matrix_chart` → `POST /api/matrix/chart`
+
+#### 👤 Human Design
+- `calculate_human_design_chart` → `POST /api/human_design/chart`
+- `analyze_human_design` → `POST /api/human_design/analysis`
+
+#### 🕉️ Jyotish/Vedic Astrology
+- `calculate_jyotish_chart` → `POST /api/jyotish/chart`
+- `calculate_jyotish_main` → `POST /api/jyotish/calculate`
+- `calculate_jyotish_dashas` → `POST /api/jyotish/dashas`
+- `calculate_jyotish_yogas` → `POST /api/jyotish/yogas`
+- `get_jyotish_info` → `GET /api/jyotish/info`
+
+#### 🗺️ Astrocartography
+- `find_best_places` → `POST /api/astrocartography/best-places`
+- `analyze_astrocartography` → `POST /api/astrocartography/analysis`
+
+### Specialized Parameter Formats
+
+#### Transits Period
+```json
+{
+  "name": "John Smith",
+  "datetime": "1990-05-15T14:30:00",
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "location": "New York, USA",
+  "timezone": "America/New_York",
+  "start_date": "2024-01-01",
+  "end_date": "2024-12-31"
+}
+```
+
+#### Solar Return
+```json
+{
+  "name": "John Smith",
+  "datetime": "1990-05-15T14:30:00",
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "location": "New York, USA",
+  "timezone": "America/New_York",
+  "return_year": 2024
+}
+```
+
+#### Lunar Return
+```json
+{
+  "name": "John Smith", 
+  "datetime": "1990-05-15T14:30:00",
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "location": "New York, USA",
+  "timezone": "America/New_York",
+  "return_date": "2024-08-21"
+}
+```
+
+#### Progressions
+```json
+{
+  "name": "John Smith",
+  "datetime": "1990-05-15T14:30:00", 
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "location": "New York, USA",
+  "timezone": "America/New_York",
+  "progression_date": "2024-08-21"
+}
+```
+
+#### Primary Directions
+```json
+{
+  "name": "John Smith",
+  "datetime": "1990-05-15T14:30:00",
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "location": "New York, USA", 
+  "timezone": "America/New_York",
+  "target_date": "2024-08-21"
+}
+```
+
+#### Horary Questions
+```json
+{
+  "question": "Should I change my job?",
+  "question_time": "2024-08-21T15:30:00",
+  "location": {
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "name": "New York, USA"
+  }
+}
+```
+
+#### Electional Astrology
+```json
+{
+  "name": "John Smith",
+  "datetime": "1990-05-15T14:30:00",
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "location": "New York, USA",
+  "timezone": "America/New_York",
+  "event_type": "wedding",
+  "start_date": "2024-09-01",
+  "end_date": "2024-12-31"
+}
+```
+
+#### Astrocartography
+```json
+{
+  "birth_data": {
+    "name": "John Smith",
+    "datetime": "1990-05-15T14:30:00",
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "location": "New York, USA",
+    "timezone": "America/New_York"
+  }
+}
+```
+
+### Authentication
+All endpoints use Bearer token authentication:
+```
+Authorization: Bearer your-api-key-here
+```
 
 Complete API documentation is available at [AstroVisor API Docs](https://astrovisor.io/docs)
 
