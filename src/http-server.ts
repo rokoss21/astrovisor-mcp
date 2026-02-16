@@ -4,11 +4,21 @@ import cors from "cors";
 import axios from "axios";
 import "dotenv/config";
 
-import { fillPathTemplate, generateOperations, generateTools, loadOpenApi, type OperationMeta } from "./openapi.js";
+import {
+  fillPathTemplate,
+  generateCompactTools,
+  generateOperations,
+  generateTools,
+  indexOperationsById,
+  loadOpenApi,
+  searchOperations,
+  type OperationMeta,
+} from "./openapi.js";
 
 const PORT = Number(process.env.MCP_HTTP_PORT || 3001);
 const API_BASE_URL = process.env.ASTROVISOR_URL || process.env.ASTRO_API_BASE_URL || "https://astrovisor.io";
 const OPENAPI_URL = process.env.ASTROVISOR_OPENAPI_URL || `${API_BASE_URL.replace(/\/$/, "")}/openapi.json`;
+const TOOL_MODE = (process.env.ASTROVISOR_TOOL_MODE || "compact").toLowerCase(); // compact|full
 
 const app = express();
 app.use(cors());
@@ -39,25 +49,36 @@ function createApiClient(apiKey: string) {
 let cached:
   | {
       tools: any[];
-      opsByTool: Map<string, OperationMeta>;
+      operations: OperationMeta[];
+      opsByTool?: Map<string, OperationMeta>;
+      opsById?: Map<string, OperationMeta[]>;
     }
   | null = null;
 
 async function ensureLoaded() {
   if (cached) return cached;
   const doc = await loadOpenApi(OPENAPI_URL);
-  const ops = generateOperations(doc);
-  const tools = generateTools(doc, ops);
-  const opsByTool = new Map<string, OperationMeta>();
-  for (const op of ops) opsByTool.set(op.toolName, op);
-  cached = { tools, opsByTool };
+  const operations = generateOperations(doc);
+
+  if (TOOL_MODE === "full") {
+    const tools = generateTools(doc, operations);
+    const opsByTool = new Map<string, OperationMeta>();
+    for (const op of operations) opsByTool.set(op.toolName, op);
+    cached = { tools, operations, opsByTool };
+    return cached;
+  }
+
+  const tools = generateCompactTools();
+  const opsById = indexOperationsById(operations);
+  cached = { tools, operations, opsById };
   return cached;
 }
 
 app.get("/mcp", (_req, res) => {
   res.json({
     name: "AstroVisor MCP HTTP Server",
-    version: "4.0.0",
+    version: "4.0.2",
+    mode: TOOL_MODE,
     openapi: OPENAPI_URL,
     endpoints: {
       tools: "/mcp/tools",
@@ -82,26 +103,84 @@ app.get("/mcp/tools", async (_req, res) => {
 
 app.post("/mcp/tools/:toolName", async (req, res) => {
   try {
+    const toolName = req.params.toolName;
+    const args = (req.body && (req.body.arguments ?? req.body)) || {};
+    const state = await ensureLoaded();
+
+    if (TOOL_MODE !== "full") {
+      if (toolName === "astrovisor_openapi_search") {
+        const found = searchOperations(state.operations, args.q, args.tag, args.limit);
+        const out = found.map((op) => ({
+          operationId: op.operationId,
+          method: op.method.toUpperCase(),
+          path: op.path,
+          summary: op.summary,
+          tags: op.tags || [],
+        }));
+        return res.json({ content: [{ type: "text", text: JSON.stringify(out, null, 2) }] });
+      }
+
+      if (toolName === "astrovisor_openapi_get") {
+        const operationId = String(args.operationId || "");
+        if (!operationId) return res.status(400).json({ error: "operationId is required" });
+        const ops = state.opsById?.get(operationId) || [];
+        if (!ops.length) return res.status(404).json({ error: `operationId not found: ${operationId}` });
+        if (ops.length > 1) {
+          const list = ops.map((op) => ({ operationId: op.operationId, method: op.method.toUpperCase(), path: op.path, summary: op.summary }));
+          return res.json({ content: [{ type: "text", text: JSON.stringify({ multiple: true, operations: list }, null, 2) }] });
+        }
+        const op = ops[0];
+        const meta = {
+          operationId: op.operationId,
+          method: op.method.toUpperCase(),
+          path: op.path,
+          summary: op.summary,
+          tags: op.tags || [],
+          parameters: op.parameters || [],
+          requestBody: op.requestBody || undefined,
+        };
+        return res.json({ content: [{ type: "text", text: JSON.stringify(meta, null, 2) }] });
+      }
+
+      if (toolName !== "astrovisor_request") return res.status(404).json({ error: `Tool not found: ${toolName}` });
+
+      const apiKey = extractApiKey(req);
+      if (!apiKey) return res.status(401).json({ error: "API key required (Authorization: Bearer or X-API-Key)." });
+
+      const operationId = String(args.operationId || "");
+      if (!operationId) return res.status(400).json({ error: "operationId is required" });
+
+      let candidates = state.opsById?.get(operationId) || [];
+      if (!candidates.length) return res.status(404).json({ error: `operationId not found: ${operationId}` });
+
+      const wantMethod = args.method ? String(args.method).toLowerCase() : undefined;
+      const wantPath = args.pathTemplate ? String(args.pathTemplate) : undefined;
+      if (wantMethod) candidates = candidates.filter((op) => op.method === wantMethod);
+      if (wantPath) candidates = candidates.filter((op) => op.path === wantPath);
+
+      if (candidates.length !== 1) {
+        return res.status(400).json({
+          error: "operationId is ambiguous; provide method and/or pathTemplate",
+          matches: candidates.map((op) => ({ method: op.method.toUpperCase(), path: op.path, summary: op.summary })),
+        });
+      }
+
+      const op = candidates[0];
+      const urlPath = fillPathTemplate(op.path, args.path);
+      const client = createApiClient(apiKey);
+      const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: args.body });
+      return res.json({ content: [{ type: "text", text: JSON.stringify(resp.data, null, 2) }] });
+    }
+
     const apiKey = extractApiKey(req);
     if (!apiKey) return res.status(401).json({ error: "API key required (Authorization: Bearer or X-API-Key)." });
 
-    const { opsByTool } = await ensureLoaded();
-    const toolName = req.params.toolName;
-    const op = opsByTool.get(toolName);
+    const op = state.opsByTool?.get(toolName);
     if (!op) return res.status(404).json({ error: `Tool not found: ${toolName}` });
-
-    const args = (req.body && (req.body.arguments ?? req.body)) || {};
     const urlPath = fillPathTemplate(op.path, args.path);
-
     const client = createApiClient(apiKey);
-    const resp = await client.request({
-      method: op.method,
-      url: urlPath,
-      params: args.query,
-      data: args.body,
-    });
-
-    res.json({ content: [{ type: "text", text: JSON.stringify(resp.data, null, 2) }] });
+    const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: args.body });
+    return res.json({ content: [{ type: "text", text: JSON.stringify(resp.data, null, 2) }] });
   } catch (e: any) {
     const status = e?.response?.status || 500;
     const detail = e?.response?.data ?? e?.message ?? String(e);
@@ -111,6 +190,5 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`AstroVisor MCP HTTP Server v4.0.0 listening on :${PORT}`);
+  console.log(`AstroVisor MCP HTTP Server v4.0.2 listening on :${PORT} (mode=${TOOL_MODE})`);
 });
-
