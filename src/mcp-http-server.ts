@@ -104,7 +104,7 @@ app.post("/mcp", async (req, res) => {
         result: {
           protocolVersion: "2024-11-05",
           capabilities: { tools: { listChanged: false } },
-          serverInfo: { name: "astrovisor-mcp-http", version: "4.2.1" },
+          serverInfo: { name: "astrovisor-mcp-http", version: "4.2.2" },
         },
       });
     }
@@ -321,5 +321,5 @@ app.post("/mcp", async (req, res) => {
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`AstroVisor MCP HTTP (JSON-RPC) Server v4.2.1 listening on :${PORT} (mode=${TOOL_MODE})`);
+  console.log(`AstroVisor MCP HTTP (JSON-RPC) Server v4.2.2 listening on :${PORT} (mode=${TOOL_MODE})`);
 });

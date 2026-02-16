@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.2.2] - 2026-02-16
+
+### 🔧 Reliability
+- Publishes the Claude stability fixes from `4.2.1` with default size budgeting and stringified-JSON `body` parsing in all server modes.
+
 ## [4.2.1] - 2026-02-16
 
 ### 🛡️ Claude Large-Result Stability Fixes

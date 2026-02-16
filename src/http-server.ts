@@ -96,7 +96,7 @@ async function ensureLoaded() {
 app.get("/mcp", (_req, res) => {
   res.json({
     name: "AstroVisor MCP HTTP Server",
-    version: "4.2.1",
+    version: "4.2.2",
     mode: TOOL_MODE,
     openapi: OPENAPI_URL,
     endpoints: {
@@ -286,5 +286,5 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`AstroVisor MCP HTTP Server v4.2.1 listening on :${PORT} (mode=${TOOL_MODE})`);
+  console.log(`AstroVisor MCP HTTP Server v4.2.2 listening on :${PORT} (mode=${TOOL_MODE})`);
 });

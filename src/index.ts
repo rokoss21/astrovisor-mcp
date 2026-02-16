@@ -57,7 +57,7 @@ function normalizeBodyInput(rawBody: any): any {
 }
 
 const server = new Server(
-  { name: "astrovisor-mcp", version: "4.2.1" },
+  { name: "astrovisor-mcp", version: "4.2.2" },
   { capabilities: { tools: {} } }
 );
 const resultStore = new InMemoryResultStore(RESULT_TTL_MS, RESULT_MAX_ENTRIES);
@@ -302,7 +302,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   const { tools } = await ensureLoaded();
-  console.error(`AstroVisor MCP v4.2.1 ready. Mode=${TOOL_MODE}. OpenAPI: ${OPENAPI_URL}. Tools: ${tools.length}.`);
+  console.error(`AstroVisor MCP v4.2.2 ready. Mode=${TOOL_MODE}. OpenAPI: ${OPENAPI_URL}. Tools: ${tools.length}.`);
 }
 
 main().catch((e) => {
