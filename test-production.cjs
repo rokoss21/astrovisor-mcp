@@ -56,10 +56,7 @@ async function main() {
   console.log(`Operations: ${n}`);
   if (!n) process.exit(1);
 
-  // Public endpoints, best-effort (won't fail the run).
-  const health = await tryFetchJson(`${baseUrl}/health`);
-  console.log(`GET /health -> ${health.status}`);
-
+  // Public endpoint (best-effort; won't fail the run).
   const authHealth = await tryFetchJson(`${baseUrl}/auth/api/health`);
   console.log(`GET /auth/api/health -> ${authHealth.status}`);
 }
