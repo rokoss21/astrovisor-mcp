@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.2.3] - 2026-02-16
+
+### 🤝 Cross-LLM Interoperability
+- Added automatic request body profile normalization across common AstroVisor field variants:
+  - core profile: `datetime/latitude/longitude/location/timezone`
+  - birth profile: `birth_datetime/birth_latitude/birth_longitude/birth_location/birth_timezone`
+- Added compatibility alias resolution for operations/tool names:
+  - supports legacy short aliases and old verb variants in full mode calls
+  - supports operation alias fallback in compact mode (`operationId`)
+- Added richer AI guidance metadata to `astrovisor_openapi_get`:
+  - `requestBodySchema`
+  - `aliases`
+  - `llmHints` (`requiredBodyFields`, `exampleBody`, profile + quick instructions)
+- Added new compact tool: `astrovisor_conventions`
+  - returns global interoperability conventions for non-Claude clients.
+
+### 🔧 Packaging
+- Bumped version to `4.2.3`.
+- Removed accidental self-dependency from `package.json`.
+
 ## [4.2.2] - 2026-02-16
 
 ### 🔧 Reliability

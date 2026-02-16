@@ -23,6 +23,7 @@ export type OperationMeta = {
   tags?: string[];
   parameters?: any[];
   requestBody?: any;
+  requestBodySchema?: any;
 };
 
 function sanitizeToolName(s: string): string {
@@ -160,6 +161,8 @@ export function generateOperations(doc: OpenApiDocument): OperationMeta[] {
       const operationId = (op as any)?.operationId;
       if (!operationId) continue;
       const toolNameBase = sanitizeToolName(operationId);
+      const bodySchemaRaw = getJsonRequestSchema(op);
+      const requestBodySchema = bodySchemaRaw ? toJsonSchema(bodySchemaRaw, doc) : undefined;
       raw.push({
         toolNameBase,
         operationId,
@@ -169,6 +172,7 @@ export function generateOperations(doc: OpenApiDocument): OperationMeta[] {
         tags: (op as any)?.tags,
         parameters: (op as any)?.parameters,
         requestBody: (op as any)?.requestBody,
+        requestBodySchema,
       });
     }
   }
@@ -204,6 +208,7 @@ export function generateOperations(doc: OpenApiDocument): OperationMeta[] {
       tags: r.tags,
       parameters: r.parameters,
       requestBody: r.requestBody,
+      requestBodySchema: r.requestBodySchema,
     });
   }
   return out;
@@ -311,6 +316,9 @@ export function generateCompactTools(): McpToolDef[] {
         type: "object",
         additionalProperties: false,
         properties: {
+          responsePath: { type: "string", description: "Alias of responsePath accepted inside query for compatibility." },
+          responseOffset: { type: "integer", minimum: 0, description: "Alias of responseOffset accepted inside query." },
+          responseLimit: { type: "integer", minimum: 0, description: "Alias of responseLimit accepted inside query." },
           offset: { type: "integer", minimum: 0, description: "Alias for responseOffset." },
           limit: { type: "integer", minimum: 0, description: "Alias for responseLimit." },
           cursor: { type: "string", description: "Opaque cursor for paging large arrays." },
@@ -320,9 +328,25 @@ export function generateCompactTools(): McpToolDef[] {
             description: "Field projection for response items.",
           },
           where: {
-            type: "object",
-            additionalProperties: true,
-            description: "Array item filters with operator suffixes.",
+            oneOf: [
+              { type: "object", additionalProperties: true },
+              {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    path: { type: "string" },
+                    field: { type: "string" },
+                    key: { type: "string" },
+                    op: { type: "string" },
+                    operator: { type: "string" },
+                    value: {},
+                  },
+                },
+              },
+            ],
+            description: "Array item filters. Supports object with operator suffixes or clauses [{path, op, value}].",
           },
           sort: {
             oneOf: [{ type: "string" }, { type: "array", items: { type: "string" } }],
@@ -407,6 +431,15 @@ export function generateCompactTools(): McpToolDef[] {
         },
       },
     },
+    {
+      name: "astrovisor_conventions",
+      description: "Get MCP interoperability conventions and parameter profiles for LLM clients.",
+      inputSchema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {},
+      },
+    },
   ];
 }
 
@@ -426,6 +459,56 @@ export function indexOperationsById(operations: OperationMeta[]): Map<string, Op
     m.set(op.operationId, arr);
   }
   return m;
+}
+
+export function normalizeOperationAlias(value: string): string {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+export function listOperationAliases(op: OperationMeta): string[] {
+  const names = new Set<string>();
+  const add = (v: string | undefined) => {
+    const n = normalizeOperationAlias(v || "");
+    if (n) names.add(n);
+  };
+
+  add(op.toolName);
+  add(op.operationId);
+  if (op.toolName.startsWith("astrovisor_")) add(op.toolName.slice("astrovisor_".length));
+
+  const short = op.operationId.split("_api_")[0];
+  const shortNoEndpoint = short.replace(/_endpoint$/, "");
+  const variants = new Set<string>([
+    short,
+    shortNoEndpoint,
+    shortNoEndpoint.replace(/^find_/, "calculate_"),
+    shortNoEndpoint.replace(/^get_/, "calculate_"),
+    shortNoEndpoint.replace(/^create_/, "calculate_"),
+    shortNoEndpoint.replace(/^calculate_/, "create_"),
+  ]);
+
+  for (const v of variants) {
+    add(v);
+    add(`astrovisor_${v}`);
+  }
+
+  return Array.from(names);
+}
+
+export function buildOperationAliasIndex(operations: OperationMeta[]): Map<string, OperationMeta[]> {
+  const index = new Map<string, OperationMeta[]>();
+  for (const op of operations) {
+    for (const alias of listOperationAliases(op)) {
+      const arr = index.get(alias) || [];
+      arr.push(op);
+      index.set(alias, arr);
+    }
+  }
+  return index;
 }
 
 export function searchOperations(

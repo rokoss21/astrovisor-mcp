@@ -5,16 +5,20 @@ import axios from "axios";
 import "dotenv/config";
 
 import {
+  buildOperationAliasIndex,
   fillPathTemplate,
   generateCompactTools,
   generateOperations,
   generateTools,
   indexOperationsById,
   listOperations,
+  listOperationAliases,
   loadOpenApi,
+  normalizeOperationAlias,
   searchOperations,
   type OperationMeta,
 } from "./openapi.js";
+import { ASTROVISOR_LLM_CONVENTIONS, buildOperationLlmHints, normalizeRequestBodyForOperation } from "./interop.js";
 import { InMemoryResultStore, parseResponseOptions, serializeForLlm } from "./serialization.js";
 
 const PORT = Number(process.env.MCP_HTTP_PORT || 3001);
@@ -25,6 +29,7 @@ const DEFAULT_RESPONSE_VIEW = process.env.ASTROVISOR_RESPONSE_VIEW || "compact";
 const DEFAULT_TOKEN_BUDGET = Number(process.env.ASTROVISOR_DEFAULT_TOKEN_BUDGET || 250_000);
 const RESULT_TTL_MS = Number(process.env.ASTROVISOR_RESULT_TTL_MS || 30 * 60 * 1000);
 const RESULT_MAX_ENTRIES = Number(process.env.ASTROVISOR_RESULT_MAX_ENTRIES || 128);
+const MCP_VERSION = "4.2.3";
 
 const app = express();
 app.use(cors());
@@ -71,6 +76,7 @@ let cached:
       operations: OperationMeta[];
       opsByTool?: Map<string, OperationMeta>;
       opsById?: Map<string, OperationMeta[]>;
+      opAliases?: Map<string, OperationMeta[]>;
     }
   | null = null;
 
@@ -78,25 +84,26 @@ async function ensureLoaded() {
   if (cached) return cached;
   const doc = await loadOpenApi(OPENAPI_URL);
   const operations = generateOperations(doc);
+  const opAliases = buildOperationAliasIndex(operations);
 
   if (TOOL_MODE === "full") {
     const tools = generateTools(doc, operations);
     const opsByTool = new Map<string, OperationMeta>();
     for (const op of operations) opsByTool.set(op.toolName, op);
-    cached = { tools, operations, opsByTool };
+    cached = { tools, operations, opsByTool, opAliases };
     return cached;
   }
 
   const tools = generateCompactTools();
   const opsById = indexOperationsById(operations);
-  cached = { tools, operations, opsById };
+  cached = { tools, operations, opsById, opAliases };
   return cached;
 }
 
 app.get("/mcp", (_req, res) => {
   res.json({
     name: "AstroVisor MCP HTTP Server",
-    version: "4.2.2",
+    version: MCP_VERSION,
     mode: TOOL_MODE,
     openapi: OPENAPI_URL,
     endpoints: {
@@ -142,7 +149,7 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
       if (toolName === "astrovisor_openapi_get") {
         const operationId = String(args.operationId || "");
         if (!operationId) return res.status(400).json({ error: "operationId is required" });
-        const ops = state.opsById?.get(operationId) || [];
+        const ops = state.opsById?.get(operationId) || state.opAliases?.get(normalizeOperationAlias(operationId)) || [];
         if (!ops.length) return res.status(404).json({ error: `operationId not found: ${operationId}` });
         if (ops.length > 1) {
           const list = ops.map((op) => ({ operationId: op.operationId, method: op.method.toUpperCase(), path: op.path, summary: op.summary }));
@@ -157,8 +164,15 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
           tags: op.tags || [],
           parameters: op.parameters || [],
           requestBody: op.requestBody || undefined,
+          requestBodySchema: op.requestBodySchema || undefined,
+          aliases: listOperationAliases(op),
+          llmHints: buildOperationLlmHints(op),
         };
         return res.json({ content: [{ type: "text", text: JSON.stringify(meta, null, 2) }] });
+      }
+
+      if (toolName === "astrovisor_conventions") {
+        return res.json({ content: [{ type: "text", text: JSON.stringify(ASTROVISOR_LLM_CONVENTIONS, null, 2) }] });
       }
 
       if (toolName === "astrovisor_openapi_list") {
@@ -212,7 +226,7 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
       const operationId = String(args.operationId || "");
       if (!operationId) return res.status(400).json({ error: "operationId is required" });
 
-      let candidates = state.opsById?.get(operationId) || [];
+      let candidates = state.opsById?.get(operationId) || state.opAliases?.get(normalizeOperationAlias(operationId)) || [];
       if (!candidates.length) return res.status(404).json({ error: `operationId not found: ${operationId}` });
 
       const wantMethod = args.method ? String(args.method).toLowerCase() : undefined;
@@ -230,8 +244,9 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
       const op = candidates[0];
       const urlPath = fillPathTemplate(op.path, args.path);
       const client = createApiClient(apiKey);
-      const body = normalizeBodyInput(args.body);
-      const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: body });
+      const normalizedBodyInput = normalizeBodyInput(args.body);
+      const normalized = normalizeRequestBodyForOperation(op, normalizedBodyInput);
+      const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: normalized.body });
       const responseOptions = parseResponseOptions(args.response, { view: DEFAULT_RESPONSE_VIEW, tokenBudget: DEFAULT_TOKEN_BUDGET });
       const shouldStore = args?.response?.store !== false;
       const resultId = shouldStore
@@ -253,6 +268,7 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
         status: resp.status,
       });
       (envelope as any).store = resultStore.stats();
+      if (normalized.normalized) (envelope as any).requestNormalization = normalized.notes;
       if (resultId) {
         (envelope as any).next = { tool: "astrovisor_result_get", arguments: { resultId } };
       }
@@ -262,12 +278,30 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
     const apiKey = extractApiKey(req);
     if (!apiKey) return res.status(401).json({ error: "API key required (Authorization: Bearer or X-API-Key)." });
 
-    const op = state.opsByTool?.get(toolName);
-    if (!op) return res.status(404).json({ error: `Tool not found: ${toolName}` });
+    let op = state.opsByTool?.get(toolName);
+    if (!op) {
+      const aliasCandidates = state.opAliases?.get(normalizeOperationAlias(toolName)) || [];
+      if (aliasCandidates.length === 1) {
+        op = aliasCandidates[0];
+      } else if (aliasCandidates.length > 1) {
+        return res.status(400).json({
+          error: "Ambiguous tool alias",
+          matches: aliasCandidates.map((x) => ({
+            toolName: x.toolName,
+            operationId: x.operationId,
+            method: x.method.toUpperCase(),
+            path: x.path,
+          })),
+        });
+      } else {
+        return res.status(404).json({ error: `Tool not found: ${toolName}` });
+      }
+    }
     const urlPath = fillPathTemplate(op.path, args.path);
     const client = createApiClient(apiKey);
-    const body = normalizeBodyInput(args.body);
-    const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: body });
+    const normalizedBodyInput = normalizeBodyInput(args.body);
+    const normalized = normalizeRequestBodyForOperation(op, normalizedBodyInput);
+    const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: normalized.body });
     const responseOptions = parseResponseOptions(undefined, { view: DEFAULT_RESPONSE_VIEW, tokenBudget: DEFAULT_TOKEN_BUDGET });
     const envelope = serializeForLlm(resp.data, responseOptions, {
       source: "api",
@@ -276,6 +310,7 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
       path: op.path,
       status: resp.status,
     });
+    if (normalized.normalized) (envelope as any).requestNormalization = normalized.notes;
     return res.json({ content: [{ type: "text", text: JSON.stringify(envelope, null, 2) }] });
   } catch (e: any) {
     const status = e?.response?.status || 500;
@@ -286,5 +321,5 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`AstroVisor MCP HTTP Server v4.2.2 listening on :${PORT} (mode=${TOOL_MODE})`);
+  console.log(`AstroVisor MCP HTTP Server v${MCP_VERSION} listening on :${PORT} (mode=${TOOL_MODE})`);
 });

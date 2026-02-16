@@ -21,11 +21,14 @@ export type ResponseOptions = {
   sort?: string | string[];
   tokenBudget?: number;
   query?: {
+    responsePath?: string;
+    responseOffset?: number;
+    responseLimit?: number;
     offset?: number;
     limit?: number;
     cursor?: string;
     select?: string[];
-    where?: Record<string, any>;
+    where?: Record<string, any> | Array<{ path?: string; field?: string; key?: string; op?: string; operator?: string; value?: any }>;
     sort?: string | string[];
   };
 };
@@ -176,14 +179,18 @@ export function parseResponseOptions(input: any, defaults?: Partial<ResponseOpti
     maxDepth: toNumber(src.maxDepth ?? d.maxDepth),
     maxString: toNumber(src.maxString ?? d.maxString),
     maxObjectKeys: toNumber(src.maxObjectKeys ?? d.maxObjectKeys),
-    responsePath: toStringOrUndefined(src.responsePath ?? d.responsePath),
-    responseOffset: toNumber(src.responseOffset ?? src.offset ?? srcQuery.offset ?? d.responseOffset ?? d.offset ?? dQuery.offset),
-    responseLimit: toNumber(src.responseLimit ?? src.limit ?? srcQuery.limit ?? d.responseLimit ?? d.limit ?? dQuery.limit),
+    responsePath: toStringOrUndefined(src.responsePath ?? srcQuery.responsePath ?? d.responsePath ?? dQuery.responsePath),
+    responseOffset: toNumber(
+      src.responseOffset ?? src.offset ?? srcQuery.responseOffset ?? srcQuery.offset ?? d.responseOffset ?? d.offset ?? dQuery.responseOffset ?? dQuery.offset,
+    ),
+    responseLimit: toNumber(
+      src.responseLimit ?? src.limit ?? srcQuery.responseLimit ?? srcQuery.limit ?? d.responseLimit ?? d.limit ?? dQuery.responseLimit ?? dQuery.limit,
+    ),
     offset: toNumber(src.offset ?? srcQuery.offset ?? d.offset ?? dQuery.offset),
     limit: toNumber(src.limit ?? srcQuery.limit ?? d.limit ?? dQuery.limit),
     cursor: toStringOrUndefined(src.cursor ?? srcQuery.cursor ?? d.cursor ?? dQuery.cursor),
     select: toStringArray(src.select ?? srcQuery.select ?? d.select ?? dQuery.select),
-    where: toObjectOrUndefined(src.where ?? srcQuery.where ?? d.where ?? dQuery.where),
+    where: normalizeWhereInput(src.where ?? srcQuery.where ?? d.where ?? dQuery.where),
     sort: toStringArrayFromAny(src.sort ?? srcQuery.sort ?? d.sort ?? dQuery.sort),
     tokenBudget: toNumber(src.tokenBudget ?? d.tokenBudget),
   };
@@ -750,6 +757,27 @@ function toNumber(v: any): number | undefined {
 function toObjectOrUndefined(v: any): Record<string, any> | undefined {
   if (!v || typeof v !== "object" || Array.isArray(v)) return undefined;
   return v as Record<string, any>;
+}
+
+function normalizeWhereInput(v: any): Record<string, any> | undefined {
+  const obj = toObjectOrUndefined(v);
+  if (obj) return obj;
+  if (!Array.isArray(v)) return undefined;
+
+  const out: Record<string, any> = {};
+  for (const clause of v) {
+    if (!clause || typeof clause !== "object" || Array.isArray(clause)) continue;
+    const path = String((clause as any).path ?? (clause as any).field ?? (clause as any).key ?? "").trim();
+    if (!path) continue;
+    const op = String((clause as any).op ?? (clause as any).operator ?? "eq")
+      .trim()
+      .toLowerCase()
+      .replace(/^_+/, "");
+    const key = op === "eq" ? path : `${path}_${op}`;
+    out[key] = (clause as any).value;
+  }
+
+  return Object.keys(out).length ? out : undefined;
 }
 
 function clampNumber(v: any, fallback: number, min: number, max: number): number {

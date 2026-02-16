@@ -54,6 +54,7 @@ So the default mode exposes a tiny toolset:
 - `astrovisor_openapi_search` (find operationIds)
 - `astrovisor_openapi_list` (get endpoint list with filters/pagination)
 - `astrovisor_openapi_get` (inspect one operation)
+- `astrovisor_conventions` (global interop conventions for any LLM client)
 - `astrovisor_request` (call any operation by operationId with serialization controls)
 - `astrovisor_result_get` (load stored full response by `resultId` and request only needed fragment)
 
@@ -64,6 +65,12 @@ Search also supports common Russian keywords mapping (for example `таро` -> 
 Set `ASTROVISOR_TOOL_MODE=full` to generate one MCP tool per OpenAPI `operationId`.
 
 Note: this can be too large for Claude Desktop depending on your schema size.
+
+Full mode also accepts legacy aliases in tool calls (for better compatibility with non-Claude clients), for example:
+
+- short operation aliases (`calculate_current_transits`)
+- old verb variants (`create_*` <-> `calculate_*`)
+- names with or without `astrovisor_` prefix
 
 ## Calling The API (Compact Mode)
 
@@ -116,7 +123,19 @@ Or list all Tarot endpoints directly:
 - `path`: values for URL templates like `/api/users/{user_id}`
 - `query`: URL query string parameters
 - `body`: JSON request body for `POST/PUT/PATCH` (object preferred; valid JSON string is auto-parsed)
+- body field profiles are auto-normalized across common aliases:
+  - core profile: `datetime/latitude/longitude/location/timezone`
+  - birth profile: `birth_datetime/birth_latitude/birth_longitude/birth_location/birth_timezone`
 - `response`: output shaping for token efficiency
+
+Use `astrovisor_openapi_get` before calling an operation. It now returns:
+
+- `requestBodySchema`
+- `aliases`
+- `llmHints` with:
+  - `requiredBodyFields`
+  - `exampleBody`
+  - quick parameter instructions
 
 Every `astrovisor_request` response includes metadata and, by default, `resultId`.
 Use it to fetch only what you need later:
@@ -154,6 +173,14 @@ Large AstroVisor payloads are now handled with a consistent envelope:
 - `sort`: deterministic ordering (`-field` for desc)
 - `cursor` / `responseOffset` / `responseLimit`: pagination
 - `tokenBudget`: auto-compact output under byte budget
+
+Compatibility notes:
+
+- `responsePath/responseOffset/responseLimit` are accepted both at `response.*` and `response.query.*`
+- `where` accepts either:
+  - object form: `{ "tension_score_gte": 19.8 }`
+  - clause array form: `[{"path":"tension_score","op":"gte","value":19.8}]`
+- always check `meta.pathFound`; if `false`, your `responsePath` is wrong.
 
 Supported `where` suffix operators:
 
