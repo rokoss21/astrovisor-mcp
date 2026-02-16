@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.2.1] - 2026-02-16
+
+### 🛡️ Claude Large-Result Stability Fixes
+- Added default global byte budget for serialization when no explicit `response.tokenBudget` is provided:
+  - env: `ASTROVISOR_DEFAULT_TOKEN_BUDGET` (default: `250000` bytes)
+- Applied the default budget across stdio MCP and both HTTP wrappers for:
+  - `astrovisor_request`
+  - `astrovisor_result_get`
+- Added automatic parsing for `body` when tools pass JSON as a string:
+  - supports Claude calls where `body` is accidentally serialized as text
+  - returns a clear validation error if string JSON is invalid
+- Keeps heavy endpoints (for example yearly transit forecasts) below Claude tool-result size limits by default.
+
 ## [4.2.0] - 2026-02-16
 
 ### 🎯 Universal Precision Serialization

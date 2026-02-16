@@ -22,6 +22,7 @@ const API_BASE_URL = process.env.ASTROVISOR_URL || process.env.ASTRO_API_BASE_UR
 const OPENAPI_URL = process.env.ASTROVISOR_OPENAPI_URL || `${API_BASE_URL.replace(/\/$/, "")}/openapi.json`;
 const TOOL_MODE = (process.env.ASTROVISOR_TOOL_MODE || "compact").toLowerCase(); // compact|full
 const DEFAULT_RESPONSE_VIEW = process.env.ASTROVISOR_RESPONSE_VIEW || "compact";
+const DEFAULT_TOKEN_BUDGET = Number(process.env.ASTROVISOR_DEFAULT_TOKEN_BUDGET || 250_000);
 const RESULT_TTL_MS = Number(process.env.ASTROVISOR_RESULT_TTL_MS || 30 * 60 * 1000);
 const RESULT_MAX_ENTRIES = Number(process.env.ASTROVISOR_RESULT_MAX_ENTRIES || 128);
 
@@ -48,6 +49,18 @@ function createApiClient(apiKey: string) {
       "X-API-Key": apiKey,
     },
   });
+}
+
+function normalizeBodyInput(rawBody: any): any {
+  if (typeof rawBody !== "string") return rawBody;
+  const trimmed = rawBody.trim();
+  if (!trimmed) return undefined;
+  if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return rawBody;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    throw new Error("body is a string but not valid JSON. Pass an object or valid JSON string.");
+  }
 }
 
 let cached:
@@ -91,7 +104,7 @@ app.post("/mcp", async (req, res) => {
         result: {
           protocolVersion: "2024-11-05",
           capabilities: { tools: { listChanged: false } },
-          serverInfo: { name: "astrovisor-mcp-http", version: "4.2.0" },
+          serverInfo: { name: "astrovisor-mcp-http", version: "4.2.1" },
         },
       });
     }
@@ -183,7 +196,7 @@ app.post("/mcp", async (req, res) => {
               error: { code: -32602, message: `resultId not found or expired: ${resultId}` },
             });
           }
-          const responseOptions = parseResponseOptions(args.response, { view: DEFAULT_RESPONSE_VIEW });
+          const responseOptions = parseResponseOptions(args.response, { view: DEFAULT_RESPONSE_VIEW, tokenBudget: DEFAULT_TOKEN_BUDGET });
           const envelope = serializeForLlm(item.payload, responseOptions, {
             source: "result_store",
             resultId,
@@ -237,8 +250,9 @@ app.post("/mcp", async (req, res) => {
         const op = candidates[0];
         const urlPath = fillPathTemplate(op.path, args.path);
         const client = createApiClient(apiKey);
-        const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: args.body });
-        const responseOptions = parseResponseOptions(args.response, { view: DEFAULT_RESPONSE_VIEW });
+        const body = normalizeBodyInput(args.body);
+        const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: body });
+        const responseOptions = parseResponseOptions(args.response, { view: DEFAULT_RESPONSE_VIEW, tokenBudget: DEFAULT_TOKEN_BUDGET });
         const shouldStore = args?.response?.store !== false;
         const resultId = shouldStore
           ? resultStore.put(resp.data, {
@@ -280,8 +294,9 @@ app.post("/mcp", async (req, res) => {
 
       const urlPath = fillPathTemplate(op.path, args.path);
       const client = createApiClient(apiKey);
-      const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: args.body });
-      const responseOptions = parseResponseOptions(undefined, { view: DEFAULT_RESPONSE_VIEW });
+      const body = normalizeBodyInput(args.body);
+      const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: body });
+      const responseOptions = parseResponseOptions(undefined, { view: DEFAULT_RESPONSE_VIEW, tokenBudget: DEFAULT_TOKEN_BUDGET });
       const envelope = serializeForLlm(resp.data, responseOptions, {
         source: "api",
         operationId: op.operationId,
@@ -306,5 +321,5 @@ app.post("/mcp", async (req, res) => {
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`AstroVisor MCP HTTP (JSON-RPC) Server v4.2.0 listening on :${PORT} (mode=${TOOL_MODE})`);
+  console.log(`AstroVisor MCP HTTP (JSON-RPC) Server v4.2.1 listening on :${PORT} (mode=${TOOL_MODE})`);
 });

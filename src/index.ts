@@ -23,6 +23,7 @@ const API_BASE_URL = process.env.ASTROVISOR_URL || process.env.ASTRO_API_BASE_UR
 const OPENAPI_URL = process.env.ASTROVISOR_OPENAPI_URL || `${API_BASE_URL.replace(/\/$/, "")}/openapi.json`;
 const TOOL_MODE = (process.env.ASTROVISOR_TOOL_MODE || "compact").toLowerCase(); // compact|full
 const DEFAULT_RESPONSE_VIEW = process.env.ASTROVISOR_RESPONSE_VIEW || "compact";
+const DEFAULT_TOKEN_BUDGET = Number(process.env.ASTROVISOR_DEFAULT_TOKEN_BUDGET || 250_000);
 const RESULT_TTL_MS = Number(process.env.ASTROVISOR_RESULT_TTL_MS || 30 * 60 * 1000);
 const RESULT_MAX_ENTRIES = Number(process.env.ASTROVISOR_RESULT_MAX_ENTRIES || 128);
 
@@ -43,8 +44,20 @@ function createApiClient(apiKey: string) {
   });
 }
 
+function normalizeBodyInput(rawBody: any): any {
+  if (typeof rawBody !== "string") return rawBody;
+  const trimmed = rawBody.trim();
+  if (!trimmed) return undefined;
+  if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return rawBody;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    throw new Error("body is a string but not valid JSON. Pass an object or valid JSON string.");
+  }
+}
+
 const server = new Server(
-  { name: "astrovisor-mcp", version: "4.2.0" },
+  { name: "astrovisor-mcp", version: "4.2.1" },
   { capabilities: { tools: {} } }
 );
 const resultStore = new InMemoryResultStore(RESULT_TTL_MS, RESULT_MAX_ENTRIES);
@@ -167,7 +180,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      const responseOptions = parseResponseOptions(args?.response, { view: DEFAULT_RESPONSE_VIEW });
+      const responseOptions = parseResponseOptions(args?.response, { view: DEFAULT_RESPONSE_VIEW, tokenBudget: DEFAULT_TOKEN_BUDGET });
       const envelope = serializeForLlm(item.payload, responseOptions, {
         source: "result_store",
         resultId,
@@ -209,13 +222,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const op = candidates[0];
     const pathParams = (args && args.path) || undefined;
     const queryParams = (args && args.query) || undefined;
-    const body = (args && args.body) || undefined;
+    const body = normalizeBodyInput((args && args.body) || undefined);
     const urlPath = fillPathTemplate(op.path, pathParams);
 
     try {
       const client = createApiClient(apiKey);
       const resp = await client.request({ method: op.method, url: urlPath, params: queryParams, data: body });
-      const responseOptions = parseResponseOptions(args?.response, { view: DEFAULT_RESPONSE_VIEW });
+      const responseOptions = parseResponseOptions(args?.response, { view: DEFAULT_RESPONSE_VIEW, tokenBudget: DEFAULT_TOKEN_BUDGET });
       const shouldStore = args?.response?.store !== false;
       const resultId = shouldStore
         ? resultStore.put(resp.data, {
@@ -262,13 +275,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   const pathParams = (args && args.path) || undefined;
   const queryParams = (args && args.query) || undefined;
-  const body = (args && args.body) || undefined;
+  const body = normalizeBodyInput((args && args.body) || undefined);
   const urlPath = fillPathTemplate(op.path, pathParams);
 
   try {
     const client = createApiClient(apiKey);
     const resp = await client.request({ method: op.method, url: urlPath, params: queryParams, data: body });
-    const responseOptions = parseResponseOptions(undefined, { view: DEFAULT_RESPONSE_VIEW });
+    const responseOptions = parseResponseOptions(undefined, { view: DEFAULT_RESPONSE_VIEW, tokenBudget: DEFAULT_TOKEN_BUDGET });
     const envelope = serializeForLlm(resp.data, responseOptions, {
       source: "api",
       operationId: op.operationId,
@@ -289,7 +302,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   const { tools } = await ensureLoaded();
-  console.error(`AstroVisor MCP v4.2.0 ready. Mode=${TOOL_MODE}. OpenAPI: ${OPENAPI_URL}. Tools: ${tools.length}.`);
+  console.error(`AstroVisor MCP v4.2.1 ready. Mode=${TOOL_MODE}. OpenAPI: ${OPENAPI_URL}. Tools: ${tools.length}.`);
 }
 
 main().catch((e) => {

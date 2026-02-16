@@ -36,6 +36,7 @@ Add to `claude_desktop_config.json`:
 - `ASTROVISOR_OPENAPI_URL` (optional): override OpenAPI URL (default: `${ASTROVISOR_URL}/openapi.json`)
 - `ASTROVISOR_TOOL_MODE` (optional): `compact` (default) or `full`
 - `ASTROVISOR_RESPONSE_VIEW` (optional): default response serialization view (`summary`, `compact`, `full`; default `compact`)
+- `ASTROVISOR_DEFAULT_TOKEN_BUDGET` (optional): default max serialized response size in bytes when request does not specify `response.tokenBudget` (default `250000`)
 - `ASTROVISOR_RESULT_TTL_MS` (optional): in-memory result cache TTL (default `1800000`)
 - `ASTROVISOR_RESULT_MAX_ENTRIES` (optional): max cached results (default `128`)
 
@@ -114,7 +115,7 @@ Or list all Tarot endpoints directly:
 
 - `path`: values for URL templates like `/api/users/{user_id}`
 - `query`: URL query string parameters
-- `body`: JSON request body for `POST/PUT/PATCH`
+- `body`: JSON request body for `POST/PUT/PATCH` (object preferred; valid JSON string is auto-parsed)
 - `response`: output shaping for token efficiency
 
 Every `astrovisor_request` response includes metadata and, by default, `resultId`.
