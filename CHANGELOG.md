@@ -8,6 +8,9 @@
 
 ### ✨ Improvements
 - Full endpoint coverage by syncing to `openapi.json` (as of API `v8.0.0`: **456 operations**)
+- Optional HTTP wrappers:
+  - `npm run start:http` (simple REST wrapper)
+  - `npm run start:jsonrpc` (MCP JSON-RPC over HTTP)
 
 ---
 
@@ -63,7 +66,7 @@ This is a **MAJOR RELEASE** that achieves **100% API coverage** with all documen
 - `get_directions_info` - Directions information
 - `get_relationships_info` - Relationship analysis info
 - `get_astrocartography_info` - Astrocartography info
-- `get_electional_info` - Electional astrology info
+- `get_electional_info` - Electional methods info
 - `get_horary_info` - Horary methods info
 - `get_transits_info` - Transits information
 - `get_human_design_info` - Human Design info
