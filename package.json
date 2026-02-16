@@ -1,6 +1,6 @@
 {
   "name": "astrovisor-mcp",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "AstroVisor MCP server that auto-syncs tools from the AstroVisor OpenAPI schema (full endpoint coverage).",
   "main": "build/index.js",
   "bin": {
@@ -13,7 +13,8 @@
     "dev": "npm run build && npm start",
     "start:http": "node build/http-server.js",
     "start:jsonrpc": "node build/mcp-http-server.js",
-    "test": "node test-production.cjs"
+    "test": "node test-production.cjs",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
