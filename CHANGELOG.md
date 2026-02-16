@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.2.6] - 2026-02-16
+
+### 📘 Documentation
+- Added a production-ready **Universal LLM Prompt** to README for cross-client MCP usage.
+- Added compact call/follow-up templates for large responses and transit-heavy workflows.
+
+### 🔧 Packaging
+- Removed accidental self-dependency (`astrovisor-mcp`) from `dependencies`.
+- Synced internal server version constants to `4.2.6`.
+
 ## [4.2.3] - 2026-02-16
 
 ### 🤝 Cross-LLM Interoperability

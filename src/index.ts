@@ -30,7 +30,7 @@ const DEFAULT_RESPONSE_VIEW = process.env.ASTROVISOR_RESPONSE_VIEW || "compact";
 const DEFAULT_TOKEN_BUDGET = Number(process.env.ASTROVISOR_DEFAULT_TOKEN_BUDGET || 250_000);
 const RESULT_TTL_MS = Number(process.env.ASTROVISOR_RESULT_TTL_MS || 30 * 60 * 1000);
 const RESULT_MAX_ENTRIES = Number(process.env.ASTROVISOR_RESULT_MAX_ENTRIES || 128);
-const MCP_VERSION = "4.2.3";
+const MCP_VERSION = "4.2.6";
 
 function getApiKey(): string {
   return process.env.ASTROVISOR_API_KEY || process.env.ASTRO_API_KEY || "";
