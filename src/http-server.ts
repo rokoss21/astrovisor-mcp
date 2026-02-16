@@ -15,15 +15,20 @@ import {
   searchOperations,
   type OperationMeta,
 } from "./openapi.js";
+import { InMemoryResultStore, parseResponseOptions, serializeForLlm } from "./serialization.js";
 
 const PORT = Number(process.env.MCP_HTTP_PORT || 3001);
 const API_BASE_URL = process.env.ASTROVISOR_URL || process.env.ASTRO_API_BASE_URL || "https://astrovisor.io";
 const OPENAPI_URL = process.env.ASTROVISOR_OPENAPI_URL || `${API_BASE_URL.replace(/\/$/, "")}/openapi.json`;
 const TOOL_MODE = (process.env.ASTROVISOR_TOOL_MODE || "compact").toLowerCase(); // compact|full
+const DEFAULT_RESPONSE_VIEW = process.env.ASTROVISOR_RESPONSE_VIEW || "compact";
+const RESULT_TTL_MS = Number(process.env.ASTROVISOR_RESULT_TTL_MS || 30 * 60 * 1000);
+const RESULT_MAX_ENTRIES = Number(process.env.ASTROVISOR_RESULT_MAX_ENTRIES || 128);
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
+const resultStore = new InMemoryResultStore(RESULT_TTL_MS, RESULT_MAX_ENTRIES);
 
 function extractApiKey(req: express.Request): string {
   const auth = req.headers.authorization;
@@ -78,7 +83,7 @@ async function ensureLoaded() {
 app.get("/mcp", (_req, res) => {
   res.json({
     name: "AstroVisor MCP HTTP Server",
-    version: "4.0.3",
+    version: "4.1.0",
     mode: TOOL_MODE,
     openapi: OPENAPI_URL,
     endpoints: {
@@ -166,6 +171,26 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
         return res.json({ content: [{ type: "text", text: JSON.stringify(out, null, 2) }] });
       }
 
+      if (toolName === "astrovisor_result_get") {
+        const resultId = String(args.resultId || "").trim();
+        if (!resultId) return res.status(400).json({ error: "resultId is required" });
+        const item = resultStore.get(resultId);
+        if (!item) return res.status(404).json({ error: `resultId not found or expired: ${resultId}`, store: resultStore.stats() });
+
+        const responseOptions = parseResponseOptions(args.response, { view: DEFAULT_RESPONSE_VIEW });
+        const envelope = serializeForLlm(item.payload, responseOptions, {
+          source: "result_store",
+          resultId,
+          operationId: item.context?.operationId,
+          method: item.context?.method,
+          path: item.context?.path,
+          status: item.context?.status,
+          createdAt: item.context?.createdAt,
+        });
+        (envelope as any).store = resultStore.stats();
+        return res.json({ content: [{ type: "text", text: JSON.stringify(envelope, null, 2) }] });
+      }
+
       if (toolName !== "astrovisor_request") return res.status(404).json({ error: `Tool not found: ${toolName}` });
 
       const apiKey = extractApiKey(req);
@@ -193,7 +218,31 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
       const urlPath = fillPathTemplate(op.path, args.path);
       const client = createApiClient(apiKey);
       const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: args.body });
-      return res.json({ content: [{ type: "text", text: JSON.stringify(resp.data, null, 2) }] });
+      const responseOptions = parseResponseOptions(args.response, { view: DEFAULT_RESPONSE_VIEW });
+      const shouldStore = args?.response?.store !== false;
+      const resultId = shouldStore
+        ? resultStore.put(resp.data, {
+            operationId: op.operationId,
+            method: op.method.toUpperCase(),
+            path: op.path,
+            status: resp.status,
+            createdAt: new Date().toISOString(),
+          })
+        : undefined;
+
+      const envelope = serializeForLlm(resp.data, responseOptions, {
+        source: "api",
+        resultId,
+        operationId: op.operationId,
+        method: op.method.toUpperCase(),
+        path: op.path,
+        status: resp.status,
+      });
+      (envelope as any).store = resultStore.stats();
+      if (resultId) {
+        (envelope as any).next = { tool: "astrovisor_result_get", arguments: { resultId } };
+      }
+      return res.json({ content: [{ type: "text", text: JSON.stringify(envelope, null, 2) }] });
     }
 
     const apiKey = extractApiKey(req);
@@ -204,7 +253,15 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
     const urlPath = fillPathTemplate(op.path, args.path);
     const client = createApiClient(apiKey);
     const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: args.body });
-    return res.json({ content: [{ type: "text", text: JSON.stringify(resp.data, null, 2) }] });
+    const responseOptions = parseResponseOptions(undefined, { view: DEFAULT_RESPONSE_VIEW });
+    const envelope = serializeForLlm(resp.data, responseOptions, {
+      source: "api",
+      operationId: op.operationId,
+      method: op.method.toUpperCase(),
+      path: op.path,
+      status: resp.status,
+    });
+    return res.json({ content: [{ type: "text", text: JSON.stringify(envelope, null, 2) }] });
   } catch (e: any) {
     const status = e?.response?.status || 500;
     const detail = e?.response?.data ?? e?.message ?? String(e);
@@ -214,5 +271,5 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`AstroVisor MCP HTTP Server v4.0.3 listening on :${PORT} (mode=${TOOL_MODE})`);
+  console.log(`AstroVisor MCP HTTP Server v4.1.0 listening on :${PORT} (mode=${TOOL_MODE})`);
 });
