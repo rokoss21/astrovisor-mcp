@@ -1,6 +1,6 @@
 {
   "name": "astrovisor-mcp",
-  "version": "4.0.3",
+  "version": "4.1.0",
   "description": "AstroVisor MCP server that auto-syncs tools from the AstroVisor OpenAPI schema (full endpoint coverage).",
   "main": "build/index.js",
   "bin": {

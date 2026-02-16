@@ -17,10 +17,14 @@ import {
   type McpToolDef,
   type OperationMeta,
 } from "./openapi.js";
+import { InMemoryResultStore, parseResponseOptions, serializeForLlm } from "./serialization.js";
 
 const API_BASE_URL = process.env.ASTROVISOR_URL || process.env.ASTRO_API_BASE_URL || "https://astrovisor.io";
 const OPENAPI_URL = process.env.ASTROVISOR_OPENAPI_URL || `${API_BASE_URL.replace(/\/$/, "")}/openapi.json`;
 const TOOL_MODE = (process.env.ASTROVISOR_TOOL_MODE || "compact").toLowerCase(); // compact|full
+const DEFAULT_RESPONSE_VIEW = process.env.ASTROVISOR_RESPONSE_VIEW || "compact";
+const RESULT_TTL_MS = Number(process.env.ASTROVISOR_RESULT_TTL_MS || 30 * 60 * 1000);
+const RESULT_MAX_ENTRIES = Number(process.env.ASTROVISOR_RESULT_MAX_ENTRIES || 128);
 
 function getApiKey(): string {
   return process.env.ASTROVISOR_API_KEY || process.env.ASTRO_API_KEY || "";
@@ -40,9 +44,10 @@ function createApiClient(apiKey: string) {
 }
 
 const server = new Server(
-  { name: "astrovisor-mcp", version: "4.0.3" },
+  { name: "astrovisor-mcp", version: "4.1.0" },
   { capabilities: { tools: {} } }
 );
+const resultStore = new InMemoryResultStore(RESULT_TTL_MS, RESULT_MAX_ENTRIES);
 
 let cached: {
   tools: McpToolDef[];
@@ -140,6 +145,42 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return { content: [{ type: "text", text: JSON.stringify(out, null, 2) }] };
     }
 
+    if (name === "astrovisor_result_get") {
+      const resultId = String(args?.resultId || "").trim();
+      if (!resultId) throw new Error("resultId is required");
+      const item = resultStore.get(resultId);
+      if (!item) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  error: `resultId not found or expired: ${resultId}`,
+                  store: resultStore.stats(),
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      }
+
+      const responseOptions = parseResponseOptions(args?.response, { view: DEFAULT_RESPONSE_VIEW });
+      const envelope = serializeForLlm(item.payload, responseOptions, {
+        source: "result_store",
+        resultId,
+        operationId: item.context?.operationId,
+        method: item.context?.method,
+        path: item.context?.path,
+        status: item.context?.status,
+        createdAt: item.context?.createdAt,
+      });
+      (envelope as any).store = resultStore.stats();
+      return { content: [{ type: "text", text: JSON.stringify(envelope, null, 2) }] };
+    }
+
     if (name !== "astrovisor_request") throw new Error(`Unknown tool: ${name}`);
 
     const apiKey = getApiKey();
@@ -174,7 +215,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
       const client = createApiClient(apiKey);
       const resp = await client.request({ method: op.method, url: urlPath, params: queryParams, data: body });
-      return { content: [{ type: "text", text: JSON.stringify(resp.data, null, 2) }] };
+      const responseOptions = parseResponseOptions(args?.response, { view: DEFAULT_RESPONSE_VIEW });
+      const shouldStore = args?.response?.store !== false;
+      const resultId = shouldStore
+        ? resultStore.put(resp.data, {
+            operationId: op.operationId,
+            method: op.method.toUpperCase(),
+            path: op.path,
+            status: resp.status,
+            createdAt: new Date().toISOString(),
+          })
+        : undefined;
+
+      const envelope = serializeForLlm(resp.data, responseOptions, {
+        source: "api",
+        resultId,
+        operationId: op.operationId,
+        method: op.method.toUpperCase(),
+        path: op.path,
+        status: resp.status,
+      });
+      (envelope as any).store = resultStore.stats();
+      if (resultId) {
+        (envelope as any).next = {
+          tool: "astrovisor_result_get",
+          arguments: { resultId },
+        };
+      }
+      return { content: [{ type: "text", text: JSON.stringify(envelope, null, 2) }] };
     } catch (err: any) {
       const status = err?.response?.status;
       const detail = err?.response?.data ?? err?.message ?? String(err);
@@ -200,7 +268,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     const client = createApiClient(apiKey);
     const resp = await client.request({ method: op.method, url: urlPath, params: queryParams, data: body });
-    return { content: [{ type: "text", text: JSON.stringify(resp.data, null, 2) }] };
+    const responseOptions = parseResponseOptions(undefined, { view: DEFAULT_RESPONSE_VIEW });
+    const envelope = serializeForLlm(resp.data, responseOptions, {
+      source: "api",
+      operationId: op.operationId,
+      method: op.method.toUpperCase(),
+      path: op.path,
+      status: resp.status,
+    });
+    return { content: [{ type: "text", text: JSON.stringify(envelope, null, 2) }] };
   } catch (err: any) {
     const status = err?.response?.status;
     const detail = err?.response?.data ?? err?.message ?? String(err);
@@ -213,7 +289,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   const { tools } = await ensureLoaded();
-  console.error(`AstroVisor MCP v4.0.3 ready. Mode=${TOOL_MODE}. OpenAPI: ${OPENAPI_URL}. Tools: ${tools.length}.`);
+  console.error(`AstroVisor MCP v4.1.0 ready. Mode=${TOOL_MODE}. OpenAPI: ${OPENAPI_URL}. Tools: ${tools.length}.`);
 }
 
 main().catch((e) => {

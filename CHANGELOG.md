@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.1.0] - 2026-02-16
+
+### 🧠 Token-Efficient Serialization
+- Added universal response serialization envelope for MCP outputs:
+  - `meta` (sizes/truncation/view/path/window)
+  - `summary` (high-signal shape info)
+  - `data` (token-optimized payload)
+- Added response shaping controls via `response` options:
+  - `view`, `include`, `exclude`, `maxItems`, `maxDepth`, `maxString`, `maxObjectKeys`
+  - `responsePath`, `responseOffset`, `responseLimit`
+- Added in-memory result caching with `resultId` and new tool:
+  - `astrovisor_result_get`
+- Applied compact serialization flow across stdio MCP and HTTP/JSON-RPC wrappers.
+
 ## [4.0.3] - 2026-02-16
 
 ### 🔍 Search & Discovery

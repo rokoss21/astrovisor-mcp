@@ -254,11 +254,40 @@ export function generateTools(doc: OpenApiDocument, operations: OperationMeta[])
 export function generateCompactTools(): McpToolDef[] {
   // A tiny toolset for Claude Desktop: full per-endpoint tool lists are too large and
   // can blow the client context window.
+  const responseSchema = {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      view: { type: "string", enum: ["summary", "compact", "full"], description: "Output detail level. Default: compact." },
+      include: {
+        type: "array",
+        items: { type: "string" },
+        description: "Keep only these response paths (dot path or JSON pointer). Example: ['data.items', '/meta'].",
+      },
+      exclude: {
+        type: "array",
+        items: { type: "string" },
+        description: "Remove these response paths (dot path or JSON pointer).",
+      },
+      maxItems: { type: "integer", minimum: 1, maximum: 5000, description: "Array item cap for serialization." },
+      maxDepth: { type: "integer", minimum: 1, maximum: 32, description: "Object depth cap for serialization." },
+      maxString: { type: "integer", minimum: 16, maximum: 64000, description: "String length cap for serialization." },
+      maxObjectKeys: { type: "integer", minimum: 1, maximum: 5000, description: "Object key cap for serialization." },
+      responsePath: {
+        type: "string",
+        description: "Select sub-tree before serialization (dot path or JSON pointer), e.g. 'data.items' or '/data/items'.",
+      },
+      responseOffset: { type: "integer", minimum: 0, description: "If selected value is array: start index." },
+      responseLimit: { type: "integer", minimum: 0, description: "If selected value is array: item count." },
+      store: { type: "boolean", description: "Store full raw payload and return resultId for follow-up fetches. Default: true." },
+    },
+  };
+
   return [
     {
       name: "astrovisor_request",
       description:
-        "Call any AstroVisor API operation by operationId. Use astrovisor_openapi_search / astrovisor_openapi_get to discover operationIds and parameter shapes.",
+        "Call any AstroVisor API operation by operationId. Supports compact serialization and follow-up retrieval by resultId.",
       inputSchema: {
         type: "object",
         additionalProperties: false,
@@ -270,6 +299,7 @@ export function generateCompactTools(): McpToolDef[] {
           path: { type: "object", description: "Path params for templates like /api/foo/{id}." },
           query: { type: "object", description: "Query string params." },
           body: { description: "JSON request body." },
+          response: responseSchema,
         },
       },
     },
@@ -310,6 +340,19 @@ export function generateCompactTools(): McpToolDef[] {
         required: ["operationId"],
         properties: {
           operationId: { type: "string" },
+        },
+      },
+    },
+    {
+      name: "astrovisor_result_get",
+      description: "Get stored full result by resultId with optional selective serialization.",
+      inputSchema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["resultId"],
+        properties: {
+          resultId: { type: "string", description: "Result ID returned by astrovisor_request meta.resultId." },
+          response: responseSchema,
         },
       },
     },
