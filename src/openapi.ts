@@ -1,4 +1,5 @@
 import axios from "axios";
+import { createHash } from "crypto";
 
 export type OpenApiDocument = {
   openapi: string;
@@ -30,6 +31,20 @@ function sanitizeToolName(s: string): string {
   if (cleaned.startsWith("astrovisor_")) return cleaned;
   if (/^[0-9]/.test(cleaned)) return `astrovisor_${cleaned}`;
   return `astrovisor_${cleaned}`;
+}
+
+const MAX_TOOL_NAME_LEN = 64;
+
+function shortHashHex(input: string, len = 10): string {
+  // Deterministic, safe characters for tool names.
+  return createHash("sha1").update(input).digest("hex").slice(0, len);
+}
+
+function enforceToolNameLimit(name: string): string {
+  if (name.length <= MAX_TOOL_NAME_LEN) return name;
+  const h = shortHashHex(name, 10);
+  const keep = Math.max(1, MAX_TOOL_NAME_LEN - (1 + h.length));
+  return `${name.slice(0, keep)}_${h}`;
 }
 
 function getJsonRequestSchema(op: any): any | null {
@@ -168,12 +183,20 @@ export function generateOperations(doc: OpenApiDocument): OperationMeta[] {
   );
 
   const counts = new Map<string, number>();
+  const used = new Set<string>();
   const out: OperationMeta[] = [];
   for (const r of raw) {
     const n = (counts.get(r.toolNameBase) || 0) + 1;
     counts.set(r.toolNameBase, n);
+    const proposed = n === 1 ? r.toolNameBase : `${r.toolNameBase}_${n}`;
+    let toolName = enforceToolNameLimit(proposed);
+    // Defensive: if truncation ever causes a collision, disambiguate.
+    for (let i = 2; used.has(toolName) && i < 50; i++) {
+      toolName = enforceToolNameLimit(`${proposed}_${shortHashHex(`${proposed}:${i}`, 6)}`);
+    }
+    used.add(toolName);
     out.push({
-      toolName: n === 1 ? r.toolNameBase : `${r.toolNameBase}_${n}`,
+      toolName,
       operationId: r.operationId,
       method: r.method,
       path: r.path,
