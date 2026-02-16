@@ -1,6 +1,6 @@
 # 🌟 AstroVisor MCP Server (OpenAPI Synced)
 
-AstroVisor MCP server that **auto-generates tools from the AstroVisor OpenAPI schema**.
+AstroVisor MCP server that syncs to the AstroVisor **OpenAPI schema**.
 
 That means when the backend adds new systems/endpoints, this MCP server picks them up automatically (no manual tool mapping).
 
@@ -34,21 +34,45 @@ Add to `claude_desktop_config.json`:
 - `ASTROVISOR_API_KEY` (required): your AstroVisor API key
 - `ASTROVISOR_URL` (optional): API base URL (default: `https://astrovisor.io`)
 - `ASTROVISOR_OPENAPI_URL` (optional): override OpenAPI URL (default: `${ASTROVISOR_URL}/openapi.json`)
+- `ASTROVISOR_TOOL_MODE` (optional): `compact` (default) or `full`
 
-## Tool Naming
+## Tool Mode
 
-Tools are generated from OpenAPI `operationId`:
+### Compact (default)
 
-`astrovisor_<operationId>`
+Claude Desktop has a limited context window. Sending hundreds of tool definitions can cause:
 
-If two operationIds sanitize to the same name, a numeric suffix is added: `..._2`, `..._3`, etc.
+- `Context size exceeds the limit`
+- tool definition validation errors
 
-## Tool Arguments Format
+So the default mode exposes a tiny toolset:
 
-All tools share the same argument envelope (to avoid name collisions):
+- `astrovisor_openapi_search` (find operationIds)
+- `astrovisor_openapi_get` (inspect one operation)
+- `astrovisor_request` (call any operation by operationId)
+
+### Full (advanced)
+
+Set `ASTROVISOR_TOOL_MODE=full` to generate one MCP tool per OpenAPI `operationId`.
+
+Note: this can be too large for Claude Desktop depending on your schema size.
+
+## Calling The API (Compact Mode)
+
+1) Find the operation you want:
 
 ```json
 {
+  "q": "gene keys",
+  "limit": 10
+}
+```
+
+2) Call it by `operationId`:
+
+```json
+{
+  "operationId": "SomeOperationId",
   "path": { "paramName": "..." },
   "query": { "q": "..." },
   "body": { "any": "json" }
@@ -58,8 +82,6 @@ All tools share the same argument envelope (to avoid name collisions):
 - `path`: values for URL templates like `/api/users/{user_id}`
 - `query`: URL query string parameters
 - `body`: JSON request body for `POST/PUT/PATCH`
-
-If an operation does not have `path`/`query`/`body`, that property is omitted from the schema.
 
 ## Local Smoke Test
 
@@ -71,4 +93,3 @@ ASTROVISOR_URL=https://astrovisor.io npm test
 
 - The server fetches OpenAPI once at startup and generates the tool list from it.
 - You need a valid **dashboard-generated** API key (`pk-...`) to call most `/api/...` endpoints.
-
