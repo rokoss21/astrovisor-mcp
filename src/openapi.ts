@@ -287,6 +287,21 @@ export function generateCompactTools(): McpToolDef[] {
       },
     },
     {
+      name: "astrovisor_openapi_list",
+      description: "List OpenAPI operations with pagination and optional filters.",
+      inputSchema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          tag: { type: "string", description: "Optional tag filter (exact match)." },
+          method: { type: "string", description: "Optional HTTP method filter (GET/POST/PUT/PATCH/DELETE)." },
+          pathPrefix: { type: "string", description: "Optional path prefix filter, e.g. /api/tarot" },
+          offset: { type: "integer", minimum: 0, description: "Start index (default 0)." },
+          limit: { type: "integer", minimum: 1, maximum: 200, description: "Max items (default 50)." },
+        },
+      },
+    },
+    {
       name: "astrovisor_openapi_get",
       description: "Get OpenAPI metadata for a specific operationId (method/path/params/requestBody).",
       inputSchema: {
@@ -325,30 +340,80 @@ export function searchOperations(
   tag: string | undefined,
   limitRaw: number | undefined,
 ): OperationMeta[] {
-  const q = (qRaw || "").trim().toLowerCase();
+  const q = normalizeQuery(qRaw || "");
   const limit = Math.max(1, Math.min(50, Number.isFinite(limitRaw as any) ? Number(limitRaw) : 10));
 
   const filtered = operations.filter((op) => {
     if (tag && !(op.tags || []).includes(tag)) return false;
     if (!q) return true;
-    const hay = `${op.operationId} ${op.summary || ""} ${op.method} ${op.path} ${(op.tags || []).join(" ")}`.toLowerCase();
-    return hay.includes(q);
+    const hay = normalizeQuery(`${op.operationId} ${op.summary || ""} ${op.method} ${op.path} ${(op.tags || []).join(" ")}`);
+    return q.split(" ").every((token) => hay.includes(token));
   });
 
   // Basic scoring: prefer opId hits, then summary/path hits.
   const scored = filtered
     .map((op) => {
       if (!q) return { op, score: 0 };
-      const opId = op.operationId.toLowerCase();
-      const s = (op.summary || "").toLowerCase();
-      const p = op.path.toLowerCase();
+      const opId = normalizeQuery(op.operationId);
+      const s = normalizeQuery(op.summary || "");
+      const p = normalizeQuery(op.path);
       let score = 0;
-      if (opId.includes(q)) score -= 20;
-      if (s.includes(q)) score -= 10;
-      if (p.includes(q)) score -= 5;
+      const tokens = q.split(" ").filter(Boolean);
+      for (const token of tokens) {
+        if (opId.includes(token)) score -= 20;
+        if (s.includes(token)) score -= 10;
+        if (p.includes(token)) score -= 5;
+      }
       return { op, score };
     })
     .sort((a, b) => a.score - b.score || a.op.operationId.localeCompare(b.op.operationId));
 
   return scored.slice(0, limit).map((x) => x.op);
 }
+
+export function listOperations(
+  operations: OperationMeta[],
+  params?: { tag?: string; method?: string; pathPrefix?: string; offset?: number; limit?: number },
+): { total: number; offset: number; limit: number; items: OperationMeta[] } {
+  const tag = params?.tag;
+  const method = params?.method ? String(params.method).toLowerCase() : undefined;
+  const pathPrefix = params?.pathPrefix;
+  const offset = Math.max(0, Number.isFinite(params?.offset as any) ? Number(params?.offset) : 0);
+  const limit = Math.max(1, Math.min(200, Number.isFinite(params?.limit as any) ? Number(params?.limit) : 50));
+
+  let filtered = operations;
+  if (tag) filtered = filtered.filter((op) => (op.tags || []).includes(tag));
+  if (method) filtered = filtered.filter((op) => op.method === method);
+  if (pathPrefix) filtered = filtered.filter((op) => op.path.startsWith(pathPrefix));
+  filtered = filtered
+    .slice()
+    .sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method) || a.operationId.localeCompare(b.operationId));
+
+  return {
+    total: filtered.length,
+    offset,
+    limit,
+    items: filtered.slice(offset, offset + limit),
+  };
+}
+
+function normalizeQuery(value: string): string {
+  let out = String(value || "").toLowerCase();
+  for (const [from, to] of QUERY_ALIASES) {
+    out = out.replaceAll(from, to);
+  }
+  return out.replace(/[^a-z0-9/_ -]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+const QUERY_ALIASES: Array<[string, string]> = [
+  ["таро", "tarot"],
+  ["оракул", "oracle"],
+  ["ленорман", "lenormand"],
+  ["ленорманд", "lenormand"],
+  ["тота", "thoth"],
+  ["марсель", "marseille"],
+  ["руайе", "rider waite smith"],
+  ["райдер", "rider"],
+  ["вайт", "waite"],
+  ["daily card", "daily"],
+];

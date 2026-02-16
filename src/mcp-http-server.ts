@@ -10,6 +10,7 @@ import {
   generateOperations,
   generateTools,
   indexOperationsById,
+  listOperations,
   loadOpenApi,
   searchOperations,
   type OperationMeta,
@@ -85,7 +86,7 @@ app.post("/mcp", async (req, res) => {
         result: {
           protocolVersion: "2024-11-05",
           capabilities: { tools: { listChanged: false } },
-          serverInfo: { name: "astrovisor-mcp-http", version: "4.0.2" },
+          serverInfo: { name: "astrovisor-mcp-http", version: "4.0.3" },
         },
       });
     }
@@ -141,6 +142,29 @@ app.post("/mcp", async (req, res) => {
             requestBody: op.requestBody || undefined,
           };
           return res.json({ jsonrpc: "2.0", id, result: { content: [{ type: "text", text: JSON.stringify(meta, null, 2) }] } });
+        }
+
+        if (toolName === "astrovisor_openapi_list") {
+          const listed = listOperations(state.operations, {
+            tag: args.tag,
+            method: args.method,
+            pathPrefix: args.pathPrefix,
+            offset: args.offset,
+            limit: args.limit,
+          });
+          const out = {
+            total: listed.total,
+            offset: listed.offset,
+            limit: listed.limit,
+            items: listed.items.map((op) => ({
+              operationId: op.operationId,
+              method: op.method.toUpperCase(),
+              path: op.path,
+              summary: op.summary,
+              tags: op.tags || [],
+            })),
+          };
+          return res.json({ jsonrpc: "2.0", id, result: { content: [{ type: "text", text: JSON.stringify(out, null, 2) }] } });
         }
 
         if (toolName !== "astrovisor_request") {
@@ -223,5 +247,5 @@ app.post("/mcp", async (req, res) => {
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`AstroVisor MCP HTTP (JSON-RPC) Server v4.0.2 listening on :${PORT} (mode=${TOOL_MODE})`);
+  console.log(`AstroVisor MCP HTTP (JSON-RPC) Server v4.0.3 listening on :${PORT} (mode=${TOOL_MODE})`);
 });

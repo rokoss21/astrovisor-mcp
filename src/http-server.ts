@@ -10,6 +10,7 @@ import {
   generateOperations,
   generateTools,
   indexOperationsById,
+  listOperations,
   loadOpenApi,
   searchOperations,
   type OperationMeta,
@@ -77,7 +78,7 @@ async function ensureLoaded() {
 app.get("/mcp", (_req, res) => {
   res.json({
     name: "AstroVisor MCP HTTP Server",
-    version: "4.0.2",
+    version: "4.0.3",
     mode: TOOL_MODE,
     openapi: OPENAPI_URL,
     endpoints: {
@@ -142,6 +143,29 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
         return res.json({ content: [{ type: "text", text: JSON.stringify(meta, null, 2) }] });
       }
 
+      if (toolName === "astrovisor_openapi_list") {
+        const listed = listOperations(state.operations, {
+          tag: args.tag,
+          method: args.method,
+          pathPrefix: args.pathPrefix,
+          offset: args.offset,
+          limit: args.limit,
+        });
+        const out = {
+          total: listed.total,
+          offset: listed.offset,
+          limit: listed.limit,
+          items: listed.items.map((op) => ({
+            operationId: op.operationId,
+            method: op.method.toUpperCase(),
+            path: op.path,
+            summary: op.summary,
+            tags: op.tags || [],
+          })),
+        };
+        return res.json({ content: [{ type: "text", text: JSON.stringify(out, null, 2) }] });
+      }
+
       if (toolName !== "astrovisor_request") return res.status(404).json({ error: `Tool not found: ${toolName}` });
 
       const apiKey = extractApiKey(req);
@@ -190,5 +214,5 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`AstroVisor MCP HTTP Server v4.0.2 listening on :${PORT} (mode=${TOOL_MODE})`);
+  console.log(`AstroVisor MCP HTTP Server v4.0.3 listening on :${PORT} (mode=${TOOL_MODE})`);
 });

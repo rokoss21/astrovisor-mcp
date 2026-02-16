@@ -48,8 +48,11 @@ Claude Desktop has a limited context window. Sending hundreds of tool definition
 So the default mode exposes a tiny toolset:
 
 - `astrovisor_openapi_search` (find operationIds)
+- `astrovisor_openapi_list` (get endpoint list with filters/pagination)
 - `astrovisor_openapi_get` (inspect one operation)
 - `astrovisor_request` (call any operation by operationId)
+
+Search also supports common Russian keywords mapping (for example `таро` -> `tarot`, `ленорман` -> `lenormand`).
 
 ### Full (advanced)
 
@@ -65,6 +68,15 @@ Note: this can be too large for Claude Desktop depending on your schema size.
 {
   "q": "gene keys",
   "limit": 10
+}
+```
+
+Or list all Tarot endpoints directly:
+
+```json
+{
+  "pathPrefix": "/api/tarot",
+  "limit": 200
 }
 ```
 
