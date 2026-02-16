@@ -97,9 +97,16 @@ Or list all Tarot endpoints directly:
     "responsePath": "data.items",
     "responseOffset": 0,
     "responseLimit": 20,
+    "select": ["id", "date", "strength", "system", "theme"],
+    "where": {
+      "strength_gte": 0.75,
+      "theme_contains": "career"
+    },
+    "sort": ["-strength", "date"],
     "include": ["items", "meta"],
     "exclude": ["items.0.debug"],
     "maxItems": 50,
+    "tokenBudget": 120000,
     "store": true
   }
 }
@@ -118,12 +125,41 @@ Use it to fetch only what you need later:
   "resultId": "abc123...",
   "response": {
     "responsePath": "data.items",
-    "responseOffset": 100,
+    "cursor": "eyJvZmZzZXQiOjEwMH0",
     "responseLimit": 20,
-    "view": "summary"
+    "select": ["id", "date", "strength", "system"],
+    "where": { "strength_gte": 0.8 },
+    "sort": "-strength",
+    "view": "compact"
   }
 }
 ```
+
+## Precision Retrieval (Universal For All LLMs)
+
+Large AstroVisor payloads are now handled with a consistent envelope:
+
+- `format`: serialization version marker (`astrovisor.serialized.v2`)
+- `meta.query.totalBefore/totalMatched/offset/limit/nextCursor`
+- `meta.availablePaths`: discoverable paths for targeted follow-up reads
+- `summary.source` + `summary.selected`: shape before/after query shaping
+- `data`: token-optimized result chunk
+
+`response` supports both flat and nested (`response.query`) selectors:
+
+- `responsePath`: select subtree first
+- `select`: field projection
+- `where`: filtering with operator suffixes
+- `sort`: deterministic ordering (`-field` for desc)
+- `cursor` / `responseOffset` / `responseLimit`: pagination
+- `tokenBudget`: auto-compact output under byte budget
+
+Supported `where` suffix operators:
+
+- `_eq`, `_ne`, `_gt`, `_gte`, `_lt`, `_lte`
+- `_in`, `_nin`
+- `_contains`, `_startswith`, `_endswith`
+- `_exists`, `_regex`
 
 ## Local Smoke Test
 

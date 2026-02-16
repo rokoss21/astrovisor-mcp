@@ -13,6 +13,21 @@ export type ResponseOptions = {
   responsePath?: string;
   responseOffset?: number;
   responseLimit?: number;
+  offset?: number;
+  limit?: number;
+  cursor?: string;
+  select?: string[];
+  where?: Record<string, any>;
+  sort?: string | string[];
+  tokenBudget?: number;
+  query?: {
+    offset?: number;
+    limit?: number;
+    cursor?: string;
+    select?: string[];
+    where?: Record<string, any>;
+    sort?: string | string[];
+  };
 };
 
 export type SerializeContext = {
@@ -36,6 +51,11 @@ type ResolvedOptions = {
   responsePath?: string;
   responseOffset?: number;
   responseLimit?: number;
+  select: string[];
+  where?: Record<string, any>;
+  sort: string[];
+  tokenBudget?: number;
+  cursor?: string;
 };
 
 type TruncationStats = {
@@ -49,8 +69,35 @@ type SelectedValue = {
   value: any;
   notFound: boolean;
   path?: string;
-  offset?: number;
-  limit?: number;
+};
+
+type QueryResult = {
+  value: any;
+  meta: {
+    totalBefore?: number;
+    totalMatched?: number;
+    offset?: number;
+    limit?: number;
+    cursor?: string;
+    nextCursor?: string;
+    sort?: string[];
+    hasWhere?: boolean;
+    hasSelect?: boolean;
+  };
+};
+
+type BudgetResult = {
+  data: any;
+  outputBytes: number;
+  sourceBytes: number;
+  stats: TruncationStats;
+  budgetAdjusted: boolean;
+  effective: {
+    maxItems: number;
+    maxDepth: number;
+    maxString: number;
+    maxObjectKeys: number;
+  };
 };
 
 export type StoredResult = {
@@ -118,6 +165,9 @@ export class InMemoryResultStore {
 export function parseResponseOptions(input: any, defaults?: Partial<ResponseOptions>): ResponseOptions {
   const src = (input && typeof input === "object" ? input : {}) as Record<string, any>;
   const d = (defaults || {}) as Record<string, any>;
+  const srcQuery = src.query && typeof src.query === "object" ? src.query : {};
+  const dQuery = d.query && typeof d.query === "object" ? d.query : {};
+
   return {
     view: src.view ?? d.view,
     include: toStringArray(src.include ?? d.include),
@@ -127,8 +177,15 @@ export function parseResponseOptions(input: any, defaults?: Partial<ResponseOpti
     maxString: toNumber(src.maxString ?? d.maxString),
     maxObjectKeys: toNumber(src.maxObjectKeys ?? d.maxObjectKeys),
     responsePath: toStringOrUndefined(src.responsePath ?? d.responsePath),
-    responseOffset: toNumber(src.responseOffset ?? d.responseOffset),
-    responseLimit: toNumber(src.responseLimit ?? d.responseLimit),
+    responseOffset: toNumber(src.responseOffset ?? src.offset ?? srcQuery.offset ?? d.responseOffset ?? d.offset ?? dQuery.offset),
+    responseLimit: toNumber(src.responseLimit ?? src.limit ?? srcQuery.limit ?? d.responseLimit ?? d.limit ?? dQuery.limit),
+    offset: toNumber(src.offset ?? srcQuery.offset ?? d.offset ?? dQuery.offset),
+    limit: toNumber(src.limit ?? srcQuery.limit ?? d.limit ?? dQuery.limit),
+    cursor: toStringOrUndefined(src.cursor ?? srcQuery.cursor ?? d.cursor ?? dQuery.cursor),
+    select: toStringArray(src.select ?? srcQuery.select ?? d.select ?? dQuery.select),
+    where: toObjectOrUndefined(src.where ?? srcQuery.where ?? d.where ?? dQuery.where),
+    sort: toStringArrayFromAny(src.sort ?? srcQuery.sort ?? d.sort ?? dQuery.sort),
+    tokenBudget: toNumber(src.tokenBudget ?? d.tokenBudget),
   };
 }
 
@@ -138,6 +195,7 @@ export function serializeForLlm(payload: any, optionsRaw?: ResponseOptions, cont
 
   if (selected.notFound) {
     return {
+      format: "astrovisor.serialized.v2",
       meta: {
         ...context,
         view: options.view,
@@ -153,34 +211,45 @@ export function serializeForLlm(payload: any, optionsRaw?: ResponseOptions, cont
   }
 
   const projected = applyProjection(selected.value, options.include, options.exclude);
-  const stats: TruncationStats = { strings: 0, arrayItems: 0, objectKeys: 0, depthCuts: 0 };
-  const data = truncateValue(projected, options, stats, 0);
-
-  const sourceBytes = safeJsonBytes(selected.value);
-  const outputBytes = safeJsonBytes(data);
-  const truncated = stats.strings > 0 || stats.arrayItems > 0 || stats.objectKeys > 0 || stats.depthCuts > 0;
+  const queried = applyQuery(projected, options);
+  const budgeted = truncateWithBudget(queried.value, options);
+  const truncated =
+    budgeted.stats.strings > 0 ||
+    budgeted.stats.arrayItems > 0 ||
+    budgeted.stats.objectKeys > 0 ||
+    budgeted.stats.depthCuts > 0;
 
   return {
+    format: "astrovisor.serialized.v2",
     meta: {
       ...context,
       view: options.view,
       selectedPath: selected.path,
-      selectedOffset: selected.offset,
-      selectedLimit: selected.limit,
       pathFound: true,
-      sourceBytes,
-      outputBytes,
+      sourceBytes: budgeted.sourceBytes,
+      outputBytes: budgeted.outputBytes,
       truncated,
-      truncation: stats,
+      truncation: budgeted.stats,
+      tokenBudget: options.tokenBudget,
+      budgetAdjusted: budgeted.budgetAdjusted,
+      effectiveLimits: budgeted.effective,
+      query: queried.meta,
+      availablePaths: listAvailablePaths(projected),
     },
-    summary: summarizeValue(selected.value),
-    data,
+    summary: {
+      source: summarizeValue(projected),
+      selected: summarizeValue(queried.value),
+    },
+    data: budgeted.data,
   };
 }
 
 function resolveOptions(input: ResponseOptions): ResolvedOptions {
   const view = normalizeView(input.view);
   const base = DEFAULTS_BY_VIEW[view];
+  const responseOffset = toNumber(input.responseOffset ?? input.offset);
+  const responseLimit = toNumber(input.responseLimit ?? input.limit);
+
   return {
     view,
     include: toStringArray(input.include),
@@ -190,8 +259,13 @@ function resolveOptions(input: ResponseOptions): ResolvedOptions {
     maxString: clampNumber(input.maxString, base.maxString, 16, 64_000),
     maxObjectKeys: clampNumber(input.maxObjectKeys, base.maxObjectKeys, 1, 5000),
     responsePath: toStringOrUndefined(input.responsePath),
-    responseOffset: toNumber(input.responseOffset),
-    responseLimit: toNumber(input.responseLimit),
+    responseOffset,
+    responseLimit,
+    select: toStringArray(input.select),
+    where: toObjectOrUndefined(input.where),
+    sort: toStringArrayFromAny(input.sort),
+    tokenBudget: clampNumberOrUndefined(input.tokenBudget, 2048, 1_000_000),
+    cursor: toStringOrUndefined(input.cursor),
   };
 }
 
@@ -216,20 +290,10 @@ function selectValue(payload: any, options: ResolvedOptions): SelectedValue {
     }
   }
 
-  let offset: number | undefined;
-  let limit: number | undefined;
-  if (!notFound && Array.isArray(value) && (options.responseOffset !== undefined || options.responseLimit !== undefined)) {
-    offset = Math.max(0, options.responseOffset || 0);
-    limit = Math.max(0, options.responseLimit === undefined ? value.length - offset : options.responseLimit);
-    value = value.slice(offset, offset + limit);
-  }
-
   return {
     value,
     notFound,
     path: selectedPath,
-    offset,
-    limit,
   };
 }
 
@@ -262,13 +326,123 @@ function applyProjection(value: any, includeRaw: string[], excludeRaw: string[])
   return out;
 }
 
-function truncateValue(value: any, options: ResolvedOptions, stats: TruncationStats, depth: number): any {
+function applyQuery(value: any, options: ResolvedOptions): QueryResult {
+  if (value === null || value === undefined) {
+    return { value, meta: {} };
+  }
+
+  if (!Array.isArray(value)) {
+    const selectedObject = options.select.length ? applySelect(value, options.select) : value;
+    return {
+      value: selectedObject,
+      meta: {
+        hasWhere: !!options.where,
+        hasSelect: options.select.length > 0,
+        sort: options.sort.length ? options.sort : undefined,
+      },
+    };
+  }
+
+  const totalBefore = value.length;
+  const filtered = options.where ? value.filter((item) => evaluateWhere(item, options.where as Record<string, any>)) : value.slice();
+  const totalMatched = filtered.length;
+  const sorted = options.sort.length ? sortItems(filtered, options.sort) : filtered;
+  const window = resolveWindow(totalMatched, options);
+  const sliced = sorted.slice(window.offset, window.offset + window.limit);
+  const selected = options.select.length ? sliced.map((item) => applySelect(item, options.select)) : sliced;
+
+  return {
+    value: selected,
+    meta: {
+      totalBefore,
+      totalMatched,
+      offset: window.offset,
+      limit: window.limit,
+      cursor: window.cursor,
+      nextCursor: window.nextCursor,
+      sort: options.sort.length ? options.sort : undefined,
+      hasWhere: !!options.where,
+      hasSelect: options.select.length > 0,
+    },
+  };
+}
+
+function resolveWindow(total: number, options: ResolvedOptions): { offset: number; limit: number; cursor?: string; nextCursor?: string } {
+  const decodedOffset = decodeCursor(options.cursor);
+  const rawOffset = decodedOffset ?? options.responseOffset ?? 0;
+  const offset = Math.max(0, Math.min(total, Math.floor(rawOffset)));
+  const requestedLimit = options.responseLimit ?? options.maxItems;
+  const limit = Math.max(0, Math.min(total - offset, Math.floor(requestedLimit)));
+  const nextOffset = offset + limit;
+  const nextCursor = nextOffset < total ? encodeCursor(nextOffset) : undefined;
+  return { offset, limit, cursor: options.cursor, nextCursor };
+}
+
+function truncateWithBudget(value: any, options: ResolvedOptions): BudgetResult {
+  let current = {
+    maxItems: options.maxItems,
+    maxDepth: options.maxDepth,
+    maxString: options.maxString,
+    maxObjectKeys: options.maxObjectKeys,
+  };
+
+  const sourceBytes = safeJsonBytes(value);
+  let bestData: any = value;
+  let bestBytes = sourceBytes;
+  let bestStats: TruncationStats = { strings: 0, arrayItems: 0, objectKeys: 0, depthCuts: 0 };
+  let adjusted = false;
+
+  for (let i = 0; i < 8; i++) {
+    const stats: TruncationStats = { strings: 0, arrayItems: 0, objectKeys: 0, depthCuts: 0 };
+    const data = truncateValue(value, current, stats, 0);
+    const bytes = safeJsonBytes(data);
+    bestData = data;
+    bestBytes = bytes;
+    bestStats = stats;
+
+    if (!options.tokenBudget || bytes <= options.tokenBudget) {
+      break;
+    }
+
+    adjusted = true;
+    const next = {
+      maxItems: Math.max(1, Math.floor(current.maxItems * 0.6)),
+      maxDepth: Math.max(1, current.maxDepth - 1),
+      maxString: Math.max(32, Math.floor(current.maxString * 0.75)),
+      maxObjectKeys: Math.max(4, Math.floor(current.maxObjectKeys * 0.7)),
+    };
+
+    const unchanged =
+      next.maxItems === current.maxItems &&
+      next.maxDepth === current.maxDepth &&
+      next.maxString === current.maxString &&
+      next.maxObjectKeys === current.maxObjectKeys;
+    current = next;
+    if (unchanged) break;
+  }
+
+  return {
+    data: bestData,
+    outputBytes: bestBytes,
+    sourceBytes,
+    stats: bestStats,
+    budgetAdjusted: adjusted,
+    effective: current,
+  };
+}
+
+function truncateValue(
+  value: any,
+  options: { maxItems: number; maxDepth: number; maxString: number; maxObjectKeys: number },
+  stats: TruncationStats,
+  depth: number,
+): any {
   if (value === null || value === undefined) return value;
 
   if (typeof value === "string") {
     if (value.length <= options.maxString) return value;
     stats.strings += 1;
-    return `${value.slice(0, options.maxString)}…`;
+    return `${value.slice(0, options.maxString)}...`;
   }
   if (typeof value !== "object") return value;
 
@@ -317,6 +491,229 @@ function inferType(x: any) {
   return typeof x;
 }
 
+function listAvailablePaths(value: any, maxDepth = 3, maxPaths = 128): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+
+  function push(path: string) {
+    if (seen.has(path)) return;
+    seen.add(path);
+    out.push(path);
+  }
+
+  function walk(node: any, path: string, depth: number) {
+    if (out.length >= maxPaths) return;
+    push(path);
+    if (depth >= maxDepth || node === null || node === undefined) return;
+
+    if (Array.isArray(node)) {
+      if (node.length > 0) walk(node[0], `${path}[]`, depth + 1);
+      return;
+    }
+
+    if (typeof node !== "object") return;
+    for (const key of Object.keys(node)) {
+      if (out.length >= maxPaths) return;
+      const childPath = path === "$" ? key : `${path}.${key}`;
+      walk(node[key], childPath, depth + 1);
+    }
+  }
+
+  walk(value, "$", 0);
+  return out;
+}
+
+function applySelect(value: any, selectPaths: string[]) {
+  if (!selectPaths.length || value === null || value === undefined) return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => applySelectObject(item, selectPaths));
+  }
+  return applySelectObject(value, selectPaths);
+}
+
+function applySelectObject(value: any, selectPaths: string[]) {
+  if (value === null || value === undefined) return value;
+  if (typeof value !== "object") return value;
+
+  const includeRoot = selectPaths.some((p) => isRootPath(p));
+  if (includeRoot) return cloneSafe(value);
+
+  const seed: any = Array.isArray(value) ? [] : {};
+  for (const p of selectPaths) {
+    const seg = parsePath(p);
+    if (seg.length === 0) continue;
+    const v = getBySegments(value, seg);
+    if (v !== undefined) setBySegments(seed, seg, cloneSafe(v));
+  }
+  return seed;
+}
+
+function evaluateWhere(item: any, where: Record<string, any>): boolean {
+  const clauses = Object.entries(where);
+  if (!clauses.length) return true;
+
+  for (const [rawKey, expected] of clauses) {
+    const parsed = parseWhereKey(rawKey);
+    const actual = parsed.path ? getByPath(item, parsed.path) : item;
+    if (!evaluateClause(actual, parsed.op, expected)) return false;
+  }
+  return true;
+}
+
+function parseWhereKey(raw: string): { path: string; op: string } {
+  const key = String(raw || "").trim();
+  const ops = [
+    "_startswith",
+    "_endswith",
+    "_contains",
+    "_exists",
+    "_regex",
+    "_gte",
+    "_lte",
+    "_gt",
+    "_lt",
+    "_eq",
+    "_ne",
+    "_in",
+    "_nin",
+  ];
+  for (const suffix of ops) {
+    if (key.endsWith(suffix)) {
+      return { path: key.slice(0, -suffix.length), op: suffix.slice(1) };
+    }
+  }
+  return { path: key, op: "eq" };
+}
+
+function evaluateClause(actual: any, op: string, expected: any): boolean {
+  switch (op) {
+    case "eq":
+      return compareEqual(actual, expected);
+    case "ne":
+      return !compareEqual(actual, expected);
+    case "gt":
+      return compareOrdered(actual, expected, (a, b) => a > b);
+    case "gte":
+      return compareOrdered(actual, expected, (a, b) => a >= b);
+    case "lt":
+      return compareOrdered(actual, expected, (a, b) => a < b);
+    case "lte":
+      return compareOrdered(actual, expected, (a, b) => a <= b);
+    case "in":
+      return Array.isArray(expected) ? expected.some((x) => compareEqual(actual, x)) : false;
+    case "nin":
+      return Array.isArray(expected) ? !expected.some((x) => compareEqual(actual, x)) : true;
+    case "contains":
+      return containsValue(actual, expected);
+    case "startswith":
+      return typeof actual === "string" && typeof expected === "string" ? actual.startsWith(expected) : false;
+    case "endswith":
+      return typeof actual === "string" && typeof expected === "string" ? actual.endsWith(expected) : false;
+    case "exists":
+      return Boolean(expected) ? actual !== undefined && actual !== null : actual === undefined || actual === null;
+    case "regex":
+      return matchRegex(actual, expected);
+    default:
+      return false;
+  }
+}
+
+function containsValue(actual: any, expected: any): boolean {
+  if (typeof actual === "string") return String(actual).toLowerCase().includes(String(expected ?? "").toLowerCase());
+  if (Array.isArray(actual)) return actual.some((v) => compareEqual(v, expected));
+  return false;
+}
+
+function matchRegex(actual: any, expected: any): boolean {
+  if (typeof actual !== "string") return false;
+  if (typeof expected === "string") {
+    try {
+      return new RegExp(expected, "i").test(actual);
+    } catch {
+      return false;
+    }
+  }
+  if (expected && typeof expected === "object") {
+    const pattern = String((expected as any).pattern || "");
+    const flags = String((expected as any).flags || "");
+    if (!pattern) return false;
+    try {
+      return new RegExp(pattern, flags).test(actual);
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+function compareEqual(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (a === null || a === undefined || b === null || b === undefined) return false;
+  if (typeof a === "number" && typeof b === "number") return Number.isFinite(a) && Number.isFinite(b) && a === b;
+  if (typeof a === "string" || typeof b === "string") return String(a) === String(b);
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+}
+
+function compareOrdered(a: any, b: any, fn: (left: number, right: number) => boolean): boolean {
+  const left = toComparableNumber(a);
+  const right = toComparableNumber(b);
+  if (left === null || right === null) return false;
+  return fn(left, right);
+}
+
+function toComparableNumber(value: any): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+    const t = Date.parse(value);
+    return Number.isNaN(t) ? null : t;
+  }
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.getTime() : null;
+  return null;
+}
+
+function sortItems(items: any[], sortClauses: string[]): any[] {
+  const clauses = sortClauses
+    .map((clause) => String(clause || "").trim())
+    .filter(Boolean)
+    .map((clause) => ({ desc: clause.startsWith("-"), path: clause.startsWith("-") ? clause.slice(1) : clause }))
+    .filter((clause) => clause.path.length > 0);
+  if (!clauses.length) return items;
+
+  return items.slice().sort((a, b) => {
+    for (const clause of clauses) {
+      const av = clause.path === "$" ? a : getByPath(a, clause.path);
+      const bv = clause.path === "$" ? b : getByPath(b, clause.path);
+      const cmp = compareSortValue(av, bv);
+      if (cmp !== 0) return clause.desc ? -cmp : cmp;
+    }
+    return 0;
+  });
+}
+
+function compareSortValue(a: any, b: any): number {
+  if (a === b) return 0;
+  if (a === undefined || a === null) return 1;
+  if (b === undefined || b === null) return -1;
+
+  const an = toComparableNumber(a);
+  const bn = toComparableNumber(b);
+  if (an !== null && bn !== null) {
+    if (an < bn) return -1;
+    if (an > bn) return 1;
+    return 0;
+  }
+
+  const as = String(a);
+  const bs = String(b);
+  return as.localeCompare(bs);
+}
+
 function safeJsonBytes(value: any): number {
   try {
     return Buffer.byteLength(JSON.stringify(value), "utf8");
@@ -327,7 +724,14 @@ function safeJsonBytes(value: any): number {
 
 function toStringArray(input: any): string[] {
   if (!Array.isArray(input)) return [];
-  return input.map((v) => String(v)).filter((v) => v.length > 0);
+  return input.map((v) => String(v)).map((v) => v.trim()).filter((v) => v.length > 0);
+}
+
+function toStringArrayFromAny(input: any): string[] {
+  if (input === undefined || input === null) return [];
+  if (Array.isArray(input)) return toStringArray(input);
+  const single = String(input).trim();
+  return single ? [single] : [];
 }
 
 function toStringOrUndefined(v: any): string | undefined {
@@ -343,9 +747,20 @@ function toNumber(v: any): number | undefined {
   return n;
 }
 
+function toObjectOrUndefined(v: any): Record<string, any> | undefined {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return undefined;
+  return v as Record<string, any>;
+}
+
 function clampNumber(v: any, fallback: number, min: number, max: number): number {
   const n = toNumber(v);
   if (n === undefined) return fallback;
+  return Math.max(min, Math.min(max, Math.floor(n)));
+}
+
+function clampNumberOrUndefined(v: any, min: number, max: number): number | undefined {
+  const n = toNumber(v);
+  if (n === undefined) return undefined;
   return Math.max(min, Math.min(max, Math.floor(n)));
 }
 
@@ -449,6 +864,24 @@ function cloneSafe<T>(value: T): T {
     } catch {
       return value;
     }
+  }
+}
+
+function encodeCursor(offset: number): string {
+  const payload = JSON.stringify({ offset: Math.max(0, Math.floor(offset)) });
+  return Buffer.from(payload, "utf8").toString("base64url");
+}
+
+function decodeCursor(cursor?: string): number | undefined {
+  if (!cursor) return undefined;
+  try {
+    const json = Buffer.from(cursor, "base64url").toString("utf8");
+    const data = JSON.parse(json);
+    const offset = toNumber(data?.offset);
+    if (offset === undefined) return undefined;
+    return Math.max(0, Math.floor(offset));
+  } catch {
+    return undefined;
   }
 }
 

@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.2.0] - 2026-02-16
+
+### 🎯 Universal Precision Serialization
+- Added a universal response shaping DSL for heavy endpoints:
+  - `select`, `where`, `sort`
+  - `cursor`, `offset`, `limit` (aliases for paging)
+  - optional nested `response.query` block
+- Added operator-based filtering for array items:
+  - `_eq`, `_ne`, `_gt`, `_gte`, `_lt`, `_lte`
+  - `_in`, `_nin`
+  - `_contains`, `_startswith`, `_endswith`
+  - `_exists`, `_regex`
+- Added deterministic window metadata in response:
+  - `meta.query.totalBefore`, `totalMatched`, `offset`, `limit`, `nextCursor`
+- Added discoverability hints:
+  - `meta.availablePaths` for targeted follow-up extraction.
+- Added adaptive byte-budget compaction:
+  - `response.tokenBudget` to keep payload size bounded while preserving key signal.
+- Serialization envelope upgraded to `format: "astrovisor.serialized.v2"`.
+
 ## [4.1.0] - 2026-02-16
 
 ### 🧠 Token-Efficient Serialization

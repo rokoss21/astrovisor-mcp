@@ -279,6 +279,57 @@ export function generateCompactTools(): McpToolDef[] {
       },
       responseOffset: { type: "integer", minimum: 0, description: "If selected value is array: start index." },
       responseLimit: { type: "integer", minimum: 0, description: "If selected value is array: item count." },
+      offset: { type: "integer", minimum: 0, description: "Alias for responseOffset." },
+      limit: { type: "integer", minimum: 0, description: "Alias for responseLimit." },
+      cursor: {
+        type: "string",
+        description: "Opaque cursor for paging large arrays. Use meta.query.nextCursor from previous response.",
+      },
+      select: {
+        type: "array",
+        items: { type: "string" },
+        description:
+          "Project only selected fields. Supports dot path or JSON pointer. For array responses, applied to each item.",
+      },
+      where: {
+        type: "object",
+        additionalProperties: true,
+        description:
+          "Filter object for array items. Supported operators by key suffix: _eq, _ne, _gt, _gte, _lt, _lte, _in, _nin, _contains, _startswith, _endswith, _exists, _regex.",
+      },
+      sort: {
+        oneOf: [{ type: "string" }, { type: "array", items: { type: "string" } }],
+        description: "Sort by field path. Use '-field' for descending. Example: ['-score', 'date'].",
+      },
+      tokenBudget: {
+        type: "integer",
+        minimum: 2048,
+        maximum: 1000000,
+        description: "Approximate max serialized payload size in bytes. Serializer auto-compacts to fit.",
+      },
+      query: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          offset: { type: "integer", minimum: 0, description: "Alias for responseOffset." },
+          limit: { type: "integer", minimum: 0, description: "Alias for responseLimit." },
+          cursor: { type: "string", description: "Opaque cursor for paging large arrays." },
+          select: {
+            type: "array",
+            items: { type: "string" },
+            description: "Field projection for response items.",
+          },
+          where: {
+            type: "object",
+            additionalProperties: true,
+            description: "Array item filters with operator suffixes.",
+          },
+          sort: {
+            oneOf: [{ type: "string" }, { type: "array", items: { type: "string" } }],
+            description: "Sort clauses, e.g. '-strength'.",
+          },
+        },
+      },
       store: { type: "boolean", description: "Store full raw payload and return resultId for follow-up fetches. Default: true." },
     },
   };
