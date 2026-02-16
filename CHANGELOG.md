@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.0.3] - 2026-02-16
+
+### 🔍 Search & Discovery
+- Improved `astrovisor_openapi_search` to better match multilingual queries (e.g. `таро` -> `tarot`).
+- Added `astrovisor_openapi_list` with filters (`tag`, `method`, `pathPrefix`) and pagination (`offset`, `limit`) to inspect all endpoints directly.
+
 ## [4.0.2] - 2026-02-16
 
 ### 🛠️ Compatibility
