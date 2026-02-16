@@ -1,4 +1,5 @@
 import axios from "axios";
+import { createHash } from "crypto";
 
 export type OpenApiDocument = {
   openapi: string;
@@ -30,6 +31,20 @@ function sanitizeToolName(s: string): string {
   if (cleaned.startsWith("astrovisor_")) return cleaned;
   if (/^[0-9]/.test(cleaned)) return `astrovisor_${cleaned}`;
   return `astrovisor_${cleaned}`;
+}
+
+const MAX_TOOL_NAME_LEN = 64;
+
+function shortHashHex(input: string, len = 10): string {
+  // Deterministic, safe characters for tool names.
+  return createHash("sha1").update(input).digest("hex").slice(0, len);
+}
+
+function enforceToolNameLimit(name: string): string {
+  if (name.length <= MAX_TOOL_NAME_LEN) return name;
+  const h = shortHashHex(name, 10);
+  const keep = Math.max(1, MAX_TOOL_NAME_LEN - (1 + h.length));
+  return `${name.slice(0, keep)}_${h}`;
 }
 
 function getJsonRequestSchema(op: any): any | null {
@@ -168,12 +183,20 @@ export function generateOperations(doc: OpenApiDocument): OperationMeta[] {
   );
 
   const counts = new Map<string, number>();
+  const used = new Set<string>();
   const out: OperationMeta[] = [];
   for (const r of raw) {
     const n = (counts.get(r.toolNameBase) || 0) + 1;
     counts.set(r.toolNameBase, n);
+    const proposed = n === 1 ? r.toolNameBase : `${r.toolNameBase}_${n}`;
+    let toolName = enforceToolNameLimit(proposed);
+    // Defensive: if truncation ever causes a collision, disambiguate.
+    for (let i = 2; used.has(toolName) && i < 50; i++) {
+      toolName = enforceToolNameLimit(`${proposed}_${shortHashHex(`${proposed}:${i}`, 6)}`);
+    }
+    used.add(toolName);
     out.push({
-      toolName: n === 1 ? r.toolNameBase : `${r.toolNameBase}_${n}`,
+      toolName,
       operationId: r.operationId,
       method: r.method,
       path: r.path,
@@ -228,10 +251,104 @@ export function generateTools(doc: OpenApiDocument, operations: OperationMeta[])
   return tools;
 }
 
+export function generateCompactTools(): McpToolDef[] {
+  // A tiny toolset for Claude Desktop: full per-endpoint tool lists are too large and
+  // can blow the client context window.
+  return [
+    {
+      name: "astrovisor_request",
+      description:
+        "Call any AstroVisor API operation by operationId. Use astrovisor_openapi_search / astrovisor_openapi_get to discover operationIds and parameter shapes.",
+      inputSchema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["operationId"],
+        properties: {
+          operationId: { type: "string", description: "OpenAPI operationId to call." },
+          method: { type: "string", description: "Optional disambiguation if operationId is not unique." },
+          pathTemplate: { type: "string", description: "Optional disambiguation if operationId is not unique." },
+          path: { type: "object", description: "Path params for templates like /api/foo/{id}." },
+          query: { type: "object", description: "Query string params." },
+          body: { description: "JSON request body." },
+        },
+      },
+    },
+    {
+      name: "astrovisor_openapi_search",
+      description: "Search AstroVisor OpenAPI operations by text (operationId/summary/path/tag). Returns top matches.",
+      inputSchema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          q: { type: "string", description: "Search text." },
+          tag: { type: "string", description: "Optional OpenAPI tag filter." },
+          limit: { type: "integer", minimum: 1, maximum: 50, description: "Max results (default 10)." },
+        },
+      },
+    },
+    {
+      name: "astrovisor_openapi_get",
+      description: "Get OpenAPI metadata for a specific operationId (method/path/params/requestBody).",
+      inputSchema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["operationId"],
+        properties: {
+          operationId: { type: "string" },
+        },
+      },
+    },
+  ];
+}
+
 export function fillPathTemplate(path: string, pathParams: Record<string, any> | undefined): string {
   return path.replace(/\\{([^}]+)\\}/g, (_, key) => {
     const v = pathParams?.[key];
     if (v === undefined || v === null) throw new Error(`Missing required path param: ${key}`);
     return encodeURIComponent(String(v));
   });
+}
+
+export function indexOperationsById(operations: OperationMeta[]): Map<string, OperationMeta[]> {
+  const m = new Map<string, OperationMeta[]>();
+  for (const op of operations) {
+    const arr = m.get(op.operationId) || [];
+    arr.push(op);
+    m.set(op.operationId, arr);
+  }
+  return m;
+}
+
+export function searchOperations(
+  operations: OperationMeta[],
+  qRaw: string | undefined,
+  tag: string | undefined,
+  limitRaw: number | undefined,
+): OperationMeta[] {
+  const q = (qRaw || "").trim().toLowerCase();
+  const limit = Math.max(1, Math.min(50, Number.isFinite(limitRaw as any) ? Number(limitRaw) : 10));
+
+  const filtered = operations.filter((op) => {
+    if (tag && !(op.tags || []).includes(tag)) return false;
+    if (!q) return true;
+    const hay = `${op.operationId} ${op.summary || ""} ${op.method} ${op.path} ${(op.tags || []).join(" ")}`.toLowerCase();
+    return hay.includes(q);
+  });
+
+  // Basic scoring: prefer opId hits, then summary/path hits.
+  const scored = filtered
+    .map((op) => {
+      if (!q) return { op, score: 0 };
+      const opId = op.operationId.toLowerCase();
+      const s = (op.summary || "").toLowerCase();
+      const p = op.path.toLowerCase();
+      let score = 0;
+      if (opId.includes(q)) score -= 20;
+      if (s.includes(q)) score -= 10;
+      if (p.includes(q)) score -= 5;
+      return { op, score };
+    })
+    .sort((a, b) => a.score - b.score || a.op.operationId.localeCompare(b.op.operationId));
+
+  return scored.slice(0, limit).map((x) => x.op);
 }

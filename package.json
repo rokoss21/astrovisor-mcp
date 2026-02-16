@@ -1,6 +1,6 @@
 {
   "name": "astrovisor-mcp",
-  "version": "4.0.0",
+  "version": "4.0.2",
   "description": "AstroVisor MCP server that auto-syncs tools from the AstroVisor OpenAPI schema (full endpoint coverage).",
   "main": "build/index.js",
   "bin": {
@@ -11,7 +11,10 @@
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "start": "node build/index.js",
     "dev": "npm run build && npm start",
-    "test": "node test-production.cjs"
+    "start:http": "node build/http-server.js",
+    "start:jsonrpc": "node build/mcp-http-server.js",
+    "test": "node test-production.cjs",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
@@ -25,16 +28,19 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rokoss21/astrovisor-mcp.git"
+    "url": "git+https://github.com/rokoss21/astrovisor-mcp.git"
   },
   "homepage": "https://astrovisor.io",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.3",
     "axios": "^1.7.2",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.1",
-    "zod": "^3.23.8"
+    "express": "^4.19.2"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
   },

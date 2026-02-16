@@ -5,45 +5,66 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 import axios from "axios";
 import "dotenv/config";
 
-import { fillPathTemplate, generateOperations, generateTools, loadOpenApi, type McpToolDef, type OperationMeta } from "./openapi.js";
+import {
+  fillPathTemplate,
+  generateCompactTools,
+  generateOperations,
+  generateTools,
+  indexOperationsById,
+  loadOpenApi,
+  searchOperations,
+  type McpToolDef,
+  type OperationMeta,
+} from "./openapi.js";
 
 const API_BASE_URL = process.env.ASTROVISOR_URL || process.env.ASTRO_API_BASE_URL || "https://astrovisor.io";
-const API_KEY = process.env.ASTROVISOR_API_KEY || process.env.ASTRO_API_KEY || "";
 const OPENAPI_URL = process.env.ASTROVISOR_OPENAPI_URL || `${API_BASE_URL.replace(/\/$/, "")}/openapi.json`;
+const TOOL_MODE = (process.env.ASTROVISOR_TOOL_MODE || "compact").toLowerCase(); // compact|full
 
-if (!API_KEY) {
-  throw new Error("ASTROVISOR_API_KEY or ASTRO_API_KEY environment variable is required");
+function getApiKey(): string {
+  return process.env.ASTROVISOR_API_KEY || process.env.ASTRO_API_KEY || "";
 }
 
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 60000,
-  headers: {
-    "Content-Type": "application/json",
-    // Support both styles; backend accepts either.
-    Authorization: `Bearer ${API_KEY}`,
-    "X-API-Key": API_KEY,
-  },
-});
+function createApiClient(apiKey: string) {
+  return axios.create({
+    baseURL: API_BASE_URL,
+    timeout: 60000,
+    headers: {
+      "Content-Type": "application/json",
+      // Support both styles; backend accepts either.
+      Authorization: `Bearer ${apiKey}`,
+      "X-API-Key": apiKey,
+    },
+  });
+}
 
 const server = new Server(
-  { name: "astrovisor-mcp", version: "4.0.0" },
+  { name: "astrovisor-mcp", version: "4.0.2" },
   { capabilities: { tools: {} } }
 );
 
 let cached: {
   tools: McpToolDef[];
-  opsByTool: Map<string, OperationMeta>;
+  operations: OperationMeta[];
+  opsByTool?: Map<string, OperationMeta>;
+  opsById?: Map<string, OperationMeta[]>;
 } | null = null;
 
 async function ensureLoaded() {
   if (cached) return cached;
   const doc = await loadOpenApi(OPENAPI_URL);
   const operations = generateOperations(doc);
-  const tools = generateTools(doc, operations);
-  const opsByTool = new Map<string, OperationMeta>();
-  for (const op of operations) opsByTool.set(op.toolName, op);
-  cached = { tools, opsByTool };
+  if (TOOL_MODE === "full") {
+    const tools = generateTools(doc, operations);
+    const opsByTool = new Map<string, OperationMeta>();
+    for (const op of operations) opsByTool.set(op.toolName, op);
+    cached = { tools, operations, opsByTool };
+    return cached;
+  }
+
+  const tools = generateCompactTools();
+  const opsById = indexOperationsById(operations);
+  cached = { tools, operations, opsById };
   return cached;
 }
 
@@ -54,30 +75,108 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params as any;
-  const { opsByTool } = await ensureLoaded();
-  const op = opsByTool.get(name);
-  if (!op) {
-    throw new Error(`Unknown tool: ${name}`);
+  const state = await ensureLoaded();
+
+  // Compact toolset: request/search/get
+  if (TOOL_MODE !== "full") {
+    if (name === "astrovisor_openapi_search") {
+      const q = args?.q;
+      const tag = args?.tag;
+      const limit = args?.limit;
+      const found = searchOperations(state.operations, q, tag, limit);
+      const out = found.map((op) => ({
+        operationId: op.operationId,
+        method: op.method.toUpperCase(),
+        path: op.path,
+        summary: op.summary,
+        tags: op.tags || [],
+      }));
+      return { content: [{ type: "text", text: JSON.stringify(out, null, 2) }] };
+    }
+
+    if (name === "astrovisor_openapi_get") {
+      const operationId = String(args?.operationId || "");
+      if (!operationId) throw new Error("operationId is required");
+      const ops = state.opsById?.get(operationId) || [];
+      if (!ops.length) throw new Error(`operationId not found: ${operationId}`);
+      if (ops.length > 1) {
+        const list = ops.map((op) => ({ operationId: op.operationId, method: op.method.toUpperCase(), path: op.path, summary: op.summary }));
+        return { content: [{ type: "text", text: JSON.stringify({ multiple: true, operations: list }, null, 2) }] };
+      }
+      const op = ops[0];
+      const meta = {
+        operationId: op.operationId,
+        method: op.method.toUpperCase(),
+        path: op.path,
+        summary: op.summary,
+        tags: op.tags || [],
+        parameters: op.parameters || [],
+        requestBody: op.requestBody || undefined,
+      };
+      return { content: [{ type: "text", text: JSON.stringify(meta, null, 2) }] };
+    }
+
+    if (name !== "astrovisor_request") throw new Error(`Unknown tool: ${name}`);
+
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      return { content: [{ type: "text", text: "API key required: set ASTROVISOR_API_KEY (or ASTRO_API_KEY)." }] };
+    }
+
+    const operationId = String(args?.operationId || "");
+    if (!operationId) throw new Error("operationId is required");
+
+    let candidates = state.opsById?.get(operationId) || [];
+    if (!candidates.length) throw new Error(`operationId not found: ${operationId}`);
+
+    const wantMethod = args?.method ? String(args.method).toLowerCase() : undefined;
+    const wantPath = args?.pathTemplate ? String(args.pathTemplate) : undefined;
+    if (wantMethod) candidates = candidates.filter((op) => op.method === wantMethod);
+    if (wantPath) candidates = candidates.filter((op) => op.path === wantPath);
+
+    if (candidates.length !== 1) {
+      const list = candidates.map((op) => ({ method: op.method.toUpperCase(), path: op.path, summary: op.summary }));
+      throw new Error(
+        `operationId is ambiguous (${candidates.length} matches). Provide method and/or pathTemplate. Matches: ${JSON.stringify(list)}`,
+      );
+    }
+
+    const op = candidates[0];
+    const pathParams = (args && args.path) || undefined;
+    const queryParams = (args && args.query) || undefined;
+    const body = (args && args.body) || undefined;
+    const urlPath = fillPathTemplate(op.path, pathParams);
+
+    try {
+      const client = createApiClient(apiKey);
+      const resp = await client.request({ method: op.method, url: urlPath, params: queryParams, data: body });
+      return { content: [{ type: "text", text: JSON.stringify(resp.data, null, 2) }] };
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const detail = err?.response?.data ?? err?.message ?? String(err);
+      const pretty = typeof detail === "string" ? detail : JSON.stringify(detail, null, 2);
+      return { content: [{ type: "text", text: `API error${status ? ` (${status})` : ""}: ${pretty}` }] };
+    }
+  }
+
+  // Full toolset: one MCP tool per operation.
+  const op = state.opsByTool?.get(name);
+  if (!op) throw new Error(`Unknown tool: ${name}`);
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    return { content: [{ type: "text", text: "API key required: set ASTROVISOR_API_KEY (or ASTRO_API_KEY)." }] };
   }
 
   const pathParams = (args && args.path) || undefined;
   const queryParams = (args && args.query) || undefined;
   const body = (args && args.body) || undefined;
-
   const urlPath = fillPathTemplate(op.path, pathParams);
 
   try {
-    const resp = await apiClient.request({
-      method: op.method,
-      url: urlPath,
-      params: queryParams,
-      data: body,
-    });
-
-    // Some endpoints return {success, data}, others return raw JSON.
-    const data = resp.data;
-    const pretty = JSON.stringify(data, null, 2);
-    return { content: [{ type: "text", text: pretty }] };
+    const client = createApiClient(apiKey);
+    const resp = await client.request({ method: op.method, url: urlPath, params: queryParams, data: body });
+    return { content: [{ type: "text", text: JSON.stringify(resp.data, null, 2) }] };
   } catch (err: any) {
     const status = err?.response?.status;
     const detail = err?.response?.data ?? err?.message ?? String(err);
@@ -90,7 +189,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   const { tools } = await ensureLoaded();
-  console.error(`AstroVisor MCP v4.0.0 ready. OpenAPI: ${OPENAPI_URL}. Tools: ${tools.length}.`);
+  console.error(`AstroVisor MCP v4.0.2 ready. Mode=${TOOL_MODE}. OpenAPI: ${OPENAPI_URL}. Tools: ${tools.length}.`);
 }
 
 main().catch((e) => {

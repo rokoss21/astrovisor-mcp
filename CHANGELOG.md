@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.0.2] - 2026-02-16
+
+### 🛠️ Compatibility
+- Default tool mode is now `compact` to avoid Claude Desktop context limit issues (no more 456 tool definitions sent at once).
+- New compact tools:
+  - `astrovisor_openapi_search`
+  - `astrovisor_openapi_get`
+  - `astrovisor_request` (call any endpoint by `operationId`)
+- Set `ASTROVISOR_TOOL_MODE=full` to generate the full per-endpoint tool list (advanced use only).
+
+## [4.0.1] - 2026-02-16
+
+### 🐛 Fixes
+- Tool names are now capped at 64 characters (Claude tool definition limit). Long names are shortened with a stable hash suffix.
+
 ## [4.0.0] - 2026-02-16 - OPENAPI SYNC (BREAKING)
 
 ### ⚠️ Breaking Changes
@@ -8,6 +23,9 @@
 
 ### ✨ Improvements
 - Full endpoint coverage by syncing to `openapi.json` (as of API `v8.0.0`: **456 operations**)
+- Optional HTTP wrappers:
+  - `npm run start:http` (simple REST wrapper)
+  - `npm run start:jsonrpc` (MCP JSON-RPC over HTTP)
 
 ---
 
