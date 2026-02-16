@@ -11,6 +11,7 @@ import {
   generateOperations,
   generateTools,
   indexOperationsById,
+  listOperations,
   loadOpenApi,
   searchOperations,
   type McpToolDef,
@@ -39,7 +40,7 @@ function createApiClient(apiKey: string) {
 }
 
 const server = new Server(
-  { name: "astrovisor-mcp", version: "4.0.2" },
+  { name: "astrovisor-mcp", version: "4.0.3" },
   { capabilities: { tools: {} } }
 );
 
@@ -116,6 +117,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return { content: [{ type: "text", text: JSON.stringify(meta, null, 2) }] };
     }
 
+    if (name === "astrovisor_openapi_list") {
+      const listed = listOperations(state.operations, {
+        tag: args?.tag,
+        method: args?.method,
+        pathPrefix: args?.pathPrefix,
+        offset: args?.offset,
+        limit: args?.limit,
+      });
+      const out = {
+        total: listed.total,
+        offset: listed.offset,
+        limit: listed.limit,
+        items: listed.items.map((op) => ({
+          operationId: op.operationId,
+          method: op.method.toUpperCase(),
+          path: op.path,
+          summary: op.summary,
+          tags: op.tags || [],
+        })),
+      };
+      return { content: [{ type: "text", text: JSON.stringify(out, null, 2) }] };
+    }
+
     if (name !== "astrovisor_request") throw new Error(`Unknown tool: ${name}`);
 
     const apiKey = getApiKey();
@@ -189,7 +213,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   const { tools } = await ensureLoaded();
-  console.error(`AstroVisor MCP v4.0.2 ready. Mode=${TOOL_MODE}. OpenAPI: ${OPENAPI_URL}. Tools: ${tools.length}.`);
+  console.error(`AstroVisor MCP v4.0.3 ready. Mode=${TOOL_MODE}. OpenAPI: ${OPENAPI_URL}. Tools: ${tools.length}.`);
 }
 
 main().catch((e) => {
