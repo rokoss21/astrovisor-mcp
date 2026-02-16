@@ -44,6 +44,8 @@ async function main() {
   console.log(`AstroVisor base URL: ${baseUrl}`);
   console.log(`OpenAPI URL: ${openapiUrl}`);
 
+  const apiKey = process.env.ASTROVISOR_API_KEY || process.env.ASTRO_API_KEY || "";
+
   const openapi = await tryFetchJson(openapiUrl);
   if (!openapi.ok) {
     console.error(`Failed to fetch OpenAPI: status=${openapi.status}`);
@@ -59,10 +61,22 @@ async function main() {
   // Public endpoint (best-effort; won't fail the run).
   const authHealth = await tryFetchJson(`${baseUrl}/auth/api/health`);
   console.log(`GET /auth/api/health -> ${authHealth.status}`);
+
+  // Auth-required endpoint (only if a key is provided).
+  if (apiKey) {
+    const headers = {
+      Authorization: `Bearer ${apiKey}`,
+      "X-API-Key": apiKey,
+    };
+    const info = await tryFetchJson(`${baseUrl}/api/gene-keys/info`, { headers });
+    console.log(`GET /api/gene-keys/info -> ${info.status}`);
+    if (!info.ok) process.exit(1);
+  } else {
+    console.log("No ASTROVISOR_API_KEY provided; skipping auth-required endpoint check.");
+  }
 }
 
 main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

@@ -27,7 +27,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rokoss21/astrovisor-mcp.git"
+    "url": "git+https://github.com/rokoss21/astrovisor-mcp.git"
   },
   "homepage": "https://astrovisor.io",
   "dependencies": {
