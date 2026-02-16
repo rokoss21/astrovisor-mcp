@@ -35,6 +35,9 @@ Add to `claude_desktop_config.json`:
 - `ASTROVISOR_URL` (optional): API base URL (default: `https://astrovisor.io`)
 - `ASTROVISOR_OPENAPI_URL` (optional): override OpenAPI URL (default: `${ASTROVISOR_URL}/openapi.json`)
 - `ASTROVISOR_TOOL_MODE` (optional): `compact` (default) or `full`
+- `ASTROVISOR_RESPONSE_VIEW` (optional): default response serialization view (`summary`, `compact`, `full`; default `compact`)
+- `ASTROVISOR_RESULT_TTL_MS` (optional): in-memory result cache TTL (default `1800000`)
+- `ASTROVISOR_RESULT_MAX_ENTRIES` (optional): max cached results (default `128`)
 
 ## Tool Mode
 
@@ -50,7 +53,8 @@ So the default mode exposes a tiny toolset:
 - `astrovisor_openapi_search` (find operationIds)
 - `astrovisor_openapi_list` (get endpoint list with filters/pagination)
 - `astrovisor_openapi_get` (inspect one operation)
-- `astrovisor_request` (call any operation by operationId)
+- `astrovisor_request` (call any operation by operationId with serialization controls)
+- `astrovisor_result_get` (load stored full response by `resultId` and request only needed fragment)
 
 Search also supports common Russian keywords mapping (for example `таро` -> `tarot`, `ленорман` -> `lenormand`).
 
@@ -87,13 +91,39 @@ Or list all Tarot endpoints directly:
   "operationId": "SomeOperationId",
   "path": { "paramName": "..." },
   "query": { "q": "..." },
-  "body": { "any": "json" }
+  "body": { "any": "json" },
+  "response": {
+    "view": "compact",
+    "responsePath": "data.items",
+    "responseOffset": 0,
+    "responseLimit": 20,
+    "include": ["items", "meta"],
+    "exclude": ["items.0.debug"],
+    "maxItems": 50,
+    "store": true
+  }
 }
 ```
 
 - `path`: values for URL templates like `/api/users/{user_id}`
 - `query`: URL query string parameters
 - `body`: JSON request body for `POST/PUT/PATCH`
+- `response`: output shaping for token efficiency
+
+Every `astrovisor_request` response includes metadata and, by default, `resultId`.
+Use it to fetch only what you need later:
+
+```json
+{
+  "resultId": "abc123...",
+  "response": {
+    "responsePath": "data.items",
+    "responseOffset": 100,
+    "responseLimit": 20,
+    "view": "summary"
+  }
+}
+```
 
 ## Local Smoke Test
 
