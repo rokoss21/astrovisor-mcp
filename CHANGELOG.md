@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0] - 2026-02-16 - OPENAPI SYNC (BREAKING)
+
+### ⚠️ Breaking Changes
+- Tools are now generated from AstroVisor OpenAPI `operationId` (tool names: `astrovisor_<operationId>`)
+- Tool arguments are now namespaced as `{ path, query, body }` to avoid collisions
+
+### ✨ Improvements
+- Full endpoint coverage by syncing to `openapi.json` (as of API `v8.0.0`: **456 operations**)
+
+---
+
 ## [2.4.0] - 2025-08-17 - COMPLETE API COVERAGE
 
 ### 🎉 Major Release - Full API Integration
@@ -53,7 +64,7 @@ This is a **MAJOR RELEASE** that achieves **100% API coverage** with all documen
 - `get_relationships_info` - Relationship analysis info
 - `get_astrocartography_info` - Astrocartography info
 - `get_electional_info` - Electional astrology info
-- `get_horary_info` - Horary astrology info
+- `get_horary_info` - Horary methods info
 - `get_transits_info` - Transits information
 - `get_human_design_info` - Human Design info
 - `get_numerology_info` - Numerology information
@@ -114,47 +125,6 @@ This is a **MAJOR RELEASE** that achieves **100% API coverage** with all documen
 
 No breaking changes for existing tools. All v2.3.x tools work identically.
 New tools are additive and follow existing patterns.
-
-### 📝 Full Tool List (50 tools)
-
-**Core Astrology (8):**
-- calculate_natal_chart, get_natal_info
-- calculate_vedic_chart, get_vedic_info  
-- calculate_human_design, get_human_design_info
-- calculate_numerology, get_numerology_info
-- calculate_matrix_of_destiny, get_matrix_info
-
-**BaZi Chinese Astrology (15):**
-- calculate_bazi_chart, analyze_bazi_personality
-- calculate_bazi_compatibility, get_bazi_info
-- analyze_bazi_twelve_palaces, analyze_bazi_life_focus
-- analyze_bazi_symbolic_stars, calculate_bazi_luck_pillars
-- calculate_bazi_annual_forecast, get_bazi_complete_analysis
-- get_bazi_career_guidance, get_bazi_relationship_guidance
-- get_bazi_health_insights, analyze_bazi_nayin
-- analyze_bazi_useful_god
-
-**Progressions & Timing (13):**
-- calculate_secondary_progressions, calculate_solar_arc_progressions
-- calculate_tertiary_progressions, compare_progressions
-- create_progressions_timeline, analyze_progressions_aspects
-- get_progressions_info
-- calculate_directions, get_directions_info
-- calculate_solar_return, calculate_lunar_return, get_solar_info
-- find_best_times, get_electional_info
-
-**Relationship & Location (9):**
-- analyze_synastry, calculate_composite_chart, get_relationships_info
-- calculate_astrocartography_map, find_best_locations, get_astrocartography_info
-- calculate_transits, find_transits_in_period, get_transits_info
-
-**Specialized Analysis (5):**
-- analyze_horary_question, get_horary_info
-
-### 🎯 Perfect for Claude Desktop
-
-All 50 tools are fully compatible with Claude Desktop MCP integration.
-Complete professional astrology analysis at your fingertips!
 
 ---
 

@@ -1,7 +1,7 @@
 {
   "name": "astrovisor-mcp",
-  "version": "3.0.2",
-  "description": "🌟 Complete professional astrology MCP server with 45 tools covering all 55 backend endpoints - Full coverage of natal charts, BaZi, Jyotish, progressions, transits, relationships, astrocartography, electional, horary, Human Design, numerology, and Matrix of Destiny!",
+  "version": "4.0.0",
+  "description": "AstroVisor MCP server that auto-syncs tools from the AstroVisor OpenAPI schema (full endpoint coverage).",
   "main": "build/index.js",
   "bin": {
     "astrovisor-mcp": "build/index.js"
@@ -15,24 +15,11 @@
   },
   "keywords": [
     "mcp",
-    "astrology",
-    "claude",
-    "ai",
-    "bazi",
-    "chinese-astrology",
-    "four-pillars",
-    "human-design",
-    "numerology",
-    "matrix-of-destiny",
-    "vedic-astrology",
-    "natal-chart",
-    "horoscope",
     "astrovisor",
-    "tarot",
-    "astrocartography",
-    "transits",
-    "compatibility",
-    "personality-analysis"
+    "astrology",
+    "openapi",
+    "claude",
+    "ai"
   ],
   "author": "Emil Rokossovskiy <emil@astrovisor.io>",
   "license": "MIT",
