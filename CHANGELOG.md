@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.0.2] - 2026-02-16
+
+### 🛠️ Compatibility
+- Default tool mode is now `compact` to avoid Claude Desktop context limit issues (no more 456 tool definitions sent at once).
+- New compact tools:
+  - `astrovisor_openapi_search`
+  - `astrovisor_openapi_get`
+  - `astrovisor_request` (call any endpoint by `operationId`)
+- Set `ASTROVISOR_TOOL_MODE=full` to generate the full per-endpoint tool list (advanced use only).
+
+## [4.0.1] - 2026-02-16
+
+### 🐛 Fixes
+- Tool names are now capped at 64 characters (Claude tool definition limit). Long names are shortened with a stable hash suffix.
+
 ## [4.0.0] - 2026-02-16 - OPENAPI SYNC (BREAKING)
 
 ### ⚠️ Breaking Changes
@@ -66,7 +81,7 @@ This is a **MAJOR RELEASE** that achieves **100% API coverage** with all documen
 - `get_directions_info` - Directions information
 - `get_relationships_info` - Relationship analysis info
 - `get_astrocartography_info` - Astrocartography info
-- `get_electional_info` - Electional methods info
+- `get_electional_info` - Electional astrology info
 - `get_horary_info` - Horary methods info
 - `get_transits_info` - Transits information
 - `get_human_design_info` - Human Design info
