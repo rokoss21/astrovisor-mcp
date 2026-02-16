@@ -1,263 +1,122 @@
 #!/usr/bin/env node
-import express from 'express';
-import cors from 'cors';
-import axios from 'axios';
+import express from "express";
+import cors from "cors";
+import axios from "axios";
+import "dotenv/config";
+
+import { fillPathTemplate, generateOperations, generateTools, loadOpenApi, type OperationMeta } from "./openapi.js";
+
+const PORT = Number(process.env.MCP_HTTP_PORT || 3001);
+const API_BASE_URL = process.env.ASTROVISOR_URL || process.env.ASTRO_API_BASE_URL || "https://astrovisor.io";
+const OPENAPI_URL = process.env.ASTROVISOR_OPENAPI_URL || `${API_BASE_URL.replace(/\/$/, "")}/openapi.json`;
 
 const app = express();
-const PORT = process.env.MCP_HTTP_PORT || 3001;
-
-// Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 
-// Configuration
-const DEFAULT_API_KEY = process.env.ASTROVISOR_API_KEY || '';
-const API_BASE_URL = process.env.ASTROVISOR_URL || 'http://127.0.0.1:8002';
+function extractApiKey(req: express.Request): string {
+  const auth = req.headers.authorization;
+  if (auth && auth.startsWith("Bearer ")) return auth.slice(7);
+  const x = req.headers["x-api-key"];
+  if (typeof x === "string" && x) return x;
+  return process.env.ASTROVISOR_API_KEY || process.env.ASTRO_API_KEY || "";
+}
 
-// Extract API key from request
-const extractApiKey = (req: express.Request): string => {
-  let apiKey = '';
-  
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-    apiKey = req.headers.authorization.substring(7);
-  }
-  
-  if (!apiKey && req.headers['x-api-key']) {
-    apiKey = req.headers['x-api-key'] as string;
-  }
-  
-  if (!apiKey) {
-    apiKey = DEFAULT_API_KEY;
-  }
-  
-  return apiKey;
-};
-
-const createApiClient = (apiKey: string) => {
+function createApiClient(apiKey: string) {
   return axios.create({
     baseURL: API_BASE_URL,
+    timeout: 60000,
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "X-API-Key": apiKey,
     },
-    timeout: 30000,
   });
-};
+}
 
-// MCP Tools Definition
-const MCP_TOOLS = [
-  {
-    name: "calculate_natal_chart",
-    description: "Calculate and analyze a natal chart",
-    inputSchema: {
-      type: "object",
-      properties: {
-        name: { type: "string", description: "Person's name" },
-        date: { type: "string", description: "Birth date (YYYY-MM-DD)" },
-        time: { type: "string", description: "Birth time (HH:MM)" },
-        location: { type: "string", description: "Birth location" },
-        latitude: { type: "number", description: "Latitude" },
-        longitude: { type: "number", description: "Longitude" },
-        timezone: { type: "string", description: "Timezone" }
-      },
-      required: ["name", "date", "time", "location", "latitude", "longitude", "timezone"]
+let cached:
+  | {
+      tools: any[];
+      opsByTool: Map<string, OperationMeta>;
     }
-  },
-  {
-    name: "calculate_jyotish", 
-    description: "Calculate Vedic astrology chart",
-    inputSchema: {
-      type: "object",
-      properties: {
-        name: { type: "string", description: "Person's name" },
-        date: { type: "string", description: "Birth date (YYYY-MM-DD)" },
-        time: { type: "string", description: "Birth time (HH:MM)" },
-        location: { type: "string", description: "Birth location" },
-        latitude: { type: "number", description: "Latitude" },
-        longitude: { type: "number", description: "Longitude" },
-        timezone: { type: "string", description: "Timezone" }
-      },
-      required: ["name", "date", "time", "location", "latitude", "longitude", "timezone"]
-    }
-  },
-  {
-    name: "validate_api_key",
-    description: "Validate your API key and get usage information", 
-    inputSchema: {
-      type: "object",
-      properties: {}
-    }
-  }
-];
+  | null = null;
 
-// Main MCP endpoint
-app.post('/mcp', async (req, res) => {
-  const { method, params, id } = req.body;
-  
+async function ensureLoaded() {
+  if (cached) return cached;
+  const doc = await loadOpenApi(OPENAPI_URL);
+  const ops = generateOperations(doc);
+  const tools = generateTools(doc, ops);
+  const opsByTool = new Map<string, OperationMeta>();
+  for (const op of ops) opsByTool.set(op.toolName, op);
+  cached = { tools, opsByTool };
+  return cached;
+}
+
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
+app.post("/mcp", async (req, res) => {
+  const { method, params, id } = req.body || {};
+
   try {
-    switch (method) {
-      case 'initialize':
-        return res.json({
-          jsonrpc: "2.0",
-          id,
-          result: {
-            protocolVersion: "2024-11-05",
-            capabilities: {
-              tools: {
-                listChanged: false
-              }
-            },
-            serverInfo: {
-              name: "AstroCore MCP Server",
-              version: "1.0.0"
-            }
-          }
-        });
-      
-      case 'notifications/initialized':
-        return res.json({
-          jsonrpc: "2.0",
-          id,
-          result: {}
-        });
-      
-      case 'tools/list':
-        return res.json({
-          jsonrpc: "2.0", 
-          id,
-          result: {
-            tools: MCP_TOOLS
-          }
-        });
-      
-      case 'tools/call':
-        const { name, arguments: args } = params;
-        
-        // Extract API key
-        const apiKey = extractApiKey(req);
-        
-        if (!apiKey) {
-          return res.json({
-            jsonrpc: "2.0",
-            id,
-            error: {
-              code: -32602,
-              message: "API key required in Authorization header"
-            }
-          });
-        }
-        
-        const apiClient = createApiClient(apiKey);
-        let result;
-        
-        try {
-          switch (name) {
-            case 'calculate_natal_chart':
-              result = await apiClient.post('/api/natal/chart', {
-                name: args.name,
-                datetime: `${args.date}T${args.time}:00`,
-                latitude: args.latitude,
-                longitude: args.longitude,
-                location: args.location,
-                timezone: args.timezone
-              });
-              break;
-              
-            case 'calculate_jyotish':
-              result = await apiClient.post('/api/jyotish/calculate', {
-                name: args.name,
-                datetime: `${args.date}T${args.time}:00`,
-                latitude: args.latitude,
-                longitude: args.longitude,
-                location: args.location,
-                timezone: args.timezone
-              });
-              break;
-              
-            case 'validate_api_key':
-              result = await apiClient.get('/v1/auth/validate');
-              break;
-              
-            default:
-              return res.json({
-                jsonrpc: "2.0",
-                id,
-                error: {
-                  code: -32602,
-                  message: `Tool '${name}' not found`
-                }
-              });
-          }
-          
-          return res.json({
-            jsonrpc: "2.0",
-            id,
-            result: {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify(result.data, null, 2)
-                }
-              ]
-            }
-          });
-          
-        } catch (apiError: any) {
-          return res.json({
-            jsonrpc: "2.0",
-            id,
-            error: {
-              code: apiError.response?.status === 401 ? -32602 : -32603,
-              message: apiError.response?.status === 401 ? 
-                "Invalid API key" : 
-                `API Error: ${apiError.response?.data?.detail || apiError.message}`
-            }
-          });
-        }
-      
-      default:
-        return res.json({
-          jsonrpc: "2.0",
-          id,
-          error: {
-            code: -32601,
-            message: "Method not found"
-          }
-        });
+    if (method === "initialize") {
+      return res.json({
+        jsonrpc: "2.0",
+        id,
+        result: {
+          protocolVersion: "2024-11-05",
+          capabilities: { tools: { listChanged: false } },
+          serverInfo: { name: "astrovisor-mcp-http", version: "4.0.0" },
+        },
+      });
     }
-    
-  } catch (error: any) {
-    return res.json({
-      jsonrpc: "2.0",
-      id,
-      error: {
-        code: -32603,
-        message: `Internal error: ${error.message}`
+
+    if (method === "notifications/initialized") {
+      return res.json({ jsonrpc: "2.0", id, result: {} });
+    }
+
+    if (method === "tools/list") {
+      const { tools } = await ensureLoaded();
+      return res.json({ jsonrpc: "2.0", id, result: { tools } });
+    }
+
+    if (method === "tools/call") {
+      const apiKey = extractApiKey(req);
+      if (!apiKey) {
+        return res.json({
+          jsonrpc: "2.0",
+          id,
+          error: { code: -32602, message: "API key required (Authorization: Bearer or X-API-Key)." },
+        });
       }
-    });
+
+      const { opsByTool } = await ensureLoaded();
+      const toolName = params?.name;
+      const op = opsByTool.get(toolName);
+      if (!op) {
+        return res.json({ jsonrpc: "2.0", id, error: { code: -32602, message: `Tool not found: ${toolName}` } });
+      }
+
+      const args = params?.arguments || {};
+      const urlPath = fillPathTemplate(op.path, args.path);
+      const client = createApiClient(apiKey);
+      const resp = await client.request({ method: op.method, url: urlPath, params: args.query, data: args.body });
+
+      return res.json({
+        jsonrpc: "2.0",
+        id,
+        result: { content: [{ type: "text", text: JSON.stringify(resp.data, null, 2) }] },
+      });
+    }
+
+    return res.json({ jsonrpc: "2.0", id, error: { code: -32601, message: "Method not found" } });
+  } catch (e: any) {
+    const detail = e?.response?.data ?? e?.message ?? String(e);
+    return res.json({ jsonrpc: "2.0", id, error: { code: -32603, message: typeof detail === "string" ? detail : JSON.stringify(detail) } });
   }
-});
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    version: '1.0.0',
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.get('/', (req, res) => {
-  res.json({
-    name: "AstroCore MCP Server",
-    version: "1.0.0", 
-    mcp_endpoint: "/mcp",
-    instructions: "Use POST to /mcp with MCP protocol JSON-RPC requests"
-  });
 });
 
 app.listen(PORT, () => {
-  console.log(`🌟 AstroCore MCP HTTP Server (MCP Protocol) запущен на порту ${PORT}`);
-  console.log(`📡 MCP Endpoint: http://localhost:${PORT}/mcp`);
-  console.log(`🔑 API ключ: Authorization: Bearer <your-key>`);
+  // eslint-disable-next-line no-console
+  console.log(`AstroVisor MCP HTTP (JSON-RPC) Server v4.0.0 listening on :${PORT}`);
 });
+
