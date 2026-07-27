@@ -22,6 +22,7 @@ import { ASTROVISOR_LLM_CONVENTIONS, buildOperationLlmHints, normalizeRequestBod
 import { InMemoryResultStore, parseResponseOptions, serializeForLlm } from "./serialization.js";
 
 const PORT = Number(process.env.MCP_HTTP_PORT || 3001);
+const HOST = process.env.MCP_HTTP_HOST || "127.0.0.1";
 const API_BASE_URL = process.env.ASTROVISOR_URL || process.env.ASTRO_API_BASE_URL || "https://astrovisor.io";
 const OPENAPI_URL = process.env.ASTROVISOR_OPENAPI_URL || `${API_BASE_URL.replace(/\/$/, "")}/openapi.json`;
 const TOOL_MODE = (process.env.ASTROVISOR_TOOL_MODE || "compact").toLowerCase(); // compact|full
@@ -29,7 +30,7 @@ const DEFAULT_RESPONSE_VIEW = process.env.ASTROVISOR_RESPONSE_VIEW || "compact";
 const DEFAULT_TOKEN_BUDGET = Number(process.env.ASTROVISOR_DEFAULT_TOKEN_BUDGET || 250_000);
 const RESULT_TTL_MS = Number(process.env.ASTROVISOR_RESULT_TTL_MS || 30 * 60 * 1000);
 const RESULT_MAX_ENTRIES = Number(process.env.ASTROVISOR_RESULT_MAX_ENTRIES || 128);
-const MCP_VERSION = "4.2.6";
+const MCP_VERSION = "4.2.7";
 
 const app = express();
 app.use(cors());
@@ -319,7 +320,7 @@ app.post("/mcp/tools/:toolName", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, HOST, () => {
   // eslint-disable-next-line no-console
-  console.log(`AstroVisor MCP HTTP Server v${MCP_VERSION} listening on :${PORT} (mode=${TOOL_MODE})`);
+  console.log(`AstroVisor MCP HTTP Server v${MCP_VERSION} listening on http://${HOST}:${PORT} (mode=${TOOL_MODE})`);
 });

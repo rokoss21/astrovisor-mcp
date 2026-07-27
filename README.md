@@ -1,35 +1,92 @@
-# 🌟 AstroVisor MCP Server (OpenAPI Synced)
+# AstroVisor MCP
 
-AstroVisor MCP server that syncs to the AstroVisor **OpenAPI schema**.
+AstroVisor MCP connects AI clients to the complete AstroVisor
+calculation API. It synchronizes tools from the live OpenAPI schema,
+so new astrology systems and endpoints become discoverable without a
+manual tool release.
 
-That means when the backend adds new systems/endpoints, this MCP server picks them up automatically (no manual tool mapping).
+Version 4.2.7 supports two production-tested transports:
 
-## Install
+- local stdio through the `astrovisor-mcp` npm package;
+- remote MCP over Streamable HTTP at `https://mcp.astrovisor.io/`.
 
-```bash
-npm install astrovisor-mcp
-```
+Both expose the same six compact tools backed by 456 current API
+operations.
 
-## Claude Desktop Config
+## What It Provides
 
-Add to `claude_desktop_config.json`:
+- Live OpenAPI discovery with search, filtering and operation metadata.
+- Compact mode with six stable tools instead of hundreds of definitions.
+- Natal, transit, Tarot and every other documented AstroVisor operation.
+- Automatic normalization between core and `birth_*` request profiles.
+- Correct date, time, datetime and timezone examples for AI clients.
+- Token-budgeted serialization, filtering, projection and pagination.
+- Temporary result storage for precise follow-up reads.
+- Per-API-key isolation for stored results in HTTP deployments.
+- Standard Streamable HTTP transport for remote MCP clients.
+
+## Get an API Key
+
+Create a key in the AstroVisor dashboard. User keys begin with `pk-`.
+Never put a real key in source control.
+
+## Claude Desktop: Local stdio
+
+Add the following to `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "astrovisor": {
       "command": "npx",
-      "args": ["astrovisor-mcp"],
+      "args": [
+        "--yes",
+        "--package=astrovisor-mcp@4.2.7",
+        "--",
+        "astrovisor-mcp"
+      ],
       "env": {
         "ASTROVISOR_API_KEY": "pk-...",
-        "ASTROVISOR_URL": "https://astrovisor.io"
+        "ASTROVISOR_URL": "https://astrovisor.io",
+        "ASTROVISOR_TOOL_MODE": "compact"
       }
     }
   }
 }
 ```
 
-## Environment Variables
+The explicit package pin prevents an older globally installed binary
+from taking precedence. Restart Claude Desktop after changing the
+configuration.
+
+## Remote Streamable HTTP
+
+Clients that support static HTTP authentication can connect without
+installing npm:
+
+```text
+MCP URL: https://mcp.astrovisor.io/
+Authorization: Bearer pk-...
+```
+
+`X-API-Key: pk-...` is also accepted. The former
+`https://mcp.astrovisor.io/mcp` address remains available as a
+compatibility alias. Health information is published at
+`https://mcp.astrovisor.io/health`.
+
+Claude's account-level custom remote connectors use OAuth rather than an
+arbitrary static `Authorization` header. Use the stdio configuration
+above for Claude Desktop API-key authentication.
+
+## Install as a Dependency
+
+Node.js 20 or newer is required.
+
+```bash
+npm install astrovisor-mcp@4.2.7
+```
+
+## Client Environment Variables
 
 - `ASTROVISOR_API_KEY` (required): your AstroVisor API key
 - `ASTROVISOR_URL` (optional): API base URL (default: `https://astrovisor.io`)
@@ -39,6 +96,41 @@ Add to `claude_desktop_config.json`:
 - `ASTROVISOR_DEFAULT_TOKEN_BUDGET` (optional): default max serialized response size in bytes when request does not specify `response.tokenBudget` (default `250000`)
 - `ASTROVISOR_RESULT_TTL_MS` (optional): in-memory result cache TTL (default `1800000`)
 - `ASTROVISOR_RESULT_MAX_ENTRIES` (optional): max cached results (default `128`)
+
+## Self-Hosting the Remote Gateway
+
+The public gateway is an operator component, not a replacement for the
+AstroVisor API. It uses the official MCP Streamable HTTP transport and
+forwards requests to the internal JSON-RPC adapter.
+
+```text
+Remote client
+  -> public Streamable HTTP gateway
+  -> internal JSON-RPC adapter
+  -> AstroVisor API
+```
+
+Start the internal adapter and public gateway:
+
+```bash
+npm run build
+npm run start:jsonrpc
+npm run start:public
+```
+
+Gateway variables:
+
+- `MCP_PUBLIC_HTTP_HOST` (default `127.0.0.1`)
+- `MCP_PUBLIC_HTTP_PORT` (default `3002`)
+- `INTERNAL_MCP_URL` (default `http://127.0.0.1:3001/mcp`)
+- `API_KEY_VALIDATION_PATH` (default `/internal/mcp/validate-api-key`)
+- `API_KEY_VALIDATION_CACHE_MS` (default `60000`)
+- `MCP_INTERNAL_VALIDATION_TOKEN` (required)
+
+The configured validation endpoint must verify caller keys without
+recording billable API usage and must itself require
+`X-Internal-MCP-Token`. Put TLS and public routing in a reverse proxy;
+keep the API, JSON-RPC adapter and gateway listeners on loopback.
 
 ## Tool Mode
 
@@ -270,13 +362,27 @@ Output policy:
 - Never claim "endpoint does not exist" before openapi_list/openapi_search verification.
 ```
 
-## Local Smoke Test
+## Validation
 
 ```bash
+# OpenAPI and public API smoke checks
 ASTROVISOR_URL=https://astrovisor.io npm test
+
+# Deterministic interop tests
+npm run test:unit
+
+# Claude Desktop-style stdio E2E
+ASTROVISOR_API_KEY=pk-... npm run test:e2e:stdio
+
+# Remote Streamable HTTP E2E
+MCP_URL=https://mcp.astrovisor.io/ \
+ASTROVISOR_API_KEY=pk-... \
+npm run test:e2e:remote
 ```
 
 ## Notes
 
 - The server fetches OpenAPI once at startup and generates the tool list from it.
 - You need a valid **dashboard-generated** API key (`pk-...`) to call most `/api/...` endpoints.
+- The production remote endpoint and npm stdio package are tested against
+  natal, current transits, Tarot and stored-result retrieval.

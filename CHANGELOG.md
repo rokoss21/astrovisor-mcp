@@ -1,5 +1,41 @@
 # Changelog
 
+## [4.2.7] - 2026-07-27
+
+### Remote MCP
+
+- Added the production Streamable HTTP gateway used by
+  `https://mcp.astrovisor.io/`.
+- Added caller API-key validation through a protected internal endpoint.
+- Added remote SDK E2E coverage for natal, current transits, Tarot and
+  stored-result retrieval.
+
+### Security and Reliability
+
+- Updated the MCP SDK, Axios, Express and related production
+  dependencies; Node.js 20 or newer is now required.
+- Bound HTTP listeners to `127.0.0.1` by default; deployments must opt in
+  to a public bind address.
+- Isolated JSON-RPC result-store entries by API-key fingerprint.
+- Added detailed readiness data to the JSON-RPC health endpoint.
+- Corrected MCP notification and JSON-RPC error handling.
+
+### Interoperability
+
+- Fixed request-profile detection so the common `name` field no longer
+  causes false `mixed` profile hints.
+- Fixed generated examples for timezones, dates, times and datetimes.
+- Added deterministic interop tests and production stdio/remote E2E
+  clients.
+
+### Documentation
+
+- Documented the public root MCP URL, API-key authentication and `/mcp`
+  compatibility alias.
+- Added pinned Claude Desktop configuration to avoid stale global npm
+  binaries.
+- Added remote-gateway architecture, environment and validation guidance.
+
 ## [4.2.6] - 2026-02-16
 
 ### 📘 Documentation

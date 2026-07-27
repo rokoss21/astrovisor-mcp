@@ -10,6 +10,9 @@ const BIRTH_PROFILE_FIELDS = [
   "birth_timezone",
 ] as const;
 
+const CORE_PROFILE_DETECTION_FIELDS = CORE_PROFILE_FIELDS.filter((field) => field !== "name");
+const BIRTH_PROFILE_DETECTION_FIELDS = BIRTH_PROFILE_FIELDS.filter((field) => field !== "name");
+
 const CORE_ALIASES: Record<string, string[]> = {
   name: ["full_name", "person_name"],
   datetime: ["birth_datetime", "date_time", "dateTime", "birthDateTime", "birth_date_time"],
@@ -95,8 +98,8 @@ function applyFirstAlias(
 function detectProfile(op: OperationMeta): "core" | "birth" | "mixed" | "unknown" {
   const expected = getExpectedBodyKeys(op);
   const required = getRequiredBodyKeys(op);
-  const hasCore = CORE_PROFILE_FIELDS.some((k) => expected.has(k) || required.has(k));
-  const hasBirth = BIRTH_PROFILE_FIELDS.some((k) => expected.has(k) || required.has(k));
+  const hasCore = CORE_PROFILE_DETECTION_FIELDS.some((k) => expected.has(k) || required.has(k));
+  const hasBirth = BIRTH_PROFILE_DETECTION_FIELDS.some((k) => expected.has(k) || required.has(k));
   if (hasCore && hasBirth) return "mixed";
   if (hasCore) return "core";
   if (hasBirth) return "birth";
@@ -157,11 +160,14 @@ export function normalizeRequestBodyForOperation(
 
 function sampleValueForField(field: string, schema: any): any {
   const f = String(field).toLowerCase();
-  if (f.includes("date") || f.includes("time")) return "2000-01-01T12:00:00";
-  if (f === "start_date" || f === "end_date") return "2000-01-01";
+  if (f.includes("timezone") || f === "tz" || f === "time_zone") return "America/New_York";
+  if (schema?.format === "date" || f === "start_date" || f === "end_date") return "2000-01-01";
+  if (schema?.format === "time") return "12:00:00";
+  if (schema?.format === "date-time" || f.includes("datetime")) return "2000-01-01T12:00:00";
+  if (f.includes("date")) return "2000-01-01";
+  if (f.includes("time")) return "12:00:00";
   if (f.includes("latitude")) return 40.7128;
   if (f.includes("longitude")) return -74.006;
-  if (f.includes("timezone")) return "America/New_York";
   if (f.includes("location")) return "New York, USA";
   if (f === "name") return "John Doe";
   if (Array.isArray(schema?.enum) && schema.enum.length) return schema.enum[0];
