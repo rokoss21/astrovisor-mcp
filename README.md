@@ -14,6 +14,13 @@ private people profiles, interactive credential setup, and safe AI request
 construction, install the separate
 [AstroVisor Skill](https://github.com/rokoss21/astrovisor-skill).
 
+> [!IMPORTANT]
+> AstroVisor calculations require a personal dashboard API key beginning with
+> `pk-`. Anonymous calculation requests are not supported. Create an account and
+> get your API key at [astrovisor.io](https://astrovisor.io/), then provide it to
+> your MCP client through a secure environment variable or the AstroVisor Skill
+> private credential setup.
+
 ```text
 AstroVisor Skill (optional workflow layer)
     ↓
@@ -482,7 +489,7 @@ AstroVisor Skill now has its own canonical repository and npm package:
 Install it directly:
 
 ```bash
-npx --yes --package=astrovisor-skill@1.0.0 -- \
+npx --yes --package=astrovisor-skill@1.0.1 -- \
   astrovisor-skill install --target both
 ```
 
