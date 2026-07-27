@@ -21,6 +21,39 @@ construction, install the separate
 > your MCP client through a secure environment variable or the AstroVisor Skill
 > private credential setup.
 
+### Configure the API key
+
+For a direct MCP connection, make the key available to the client process:
+
+```bash
+export ASTROVISOR_API_KEY="pk-..."
+```
+
+For the safer profile-aware setup, install
+[AstroVisor Skill](https://github.com/rokoss21/astrovisor-skill) and use its hidden
+key prompt:
+
+```bash
+npx --yes --package=astrovisor-skill@1.0.1 -- \
+  astrovisor-skill install --target both
+
+node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  config set-key
+
+node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  doctor --json
+```
+
+You can also ask your agent:
+
+```text
+Use $astrovisor. Help me securely configure my AstroVisor API key, keep it out of
+chat and client configuration, then verify the MCP connection.
+```
+
+The agent should guide you to the hidden terminal prompt rather than asking you to
+paste the full key into the conversation.
+
 ```text
 AstroVisor Skill (optional workflow layer)
     ↓
