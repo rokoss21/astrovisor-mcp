@@ -22,7 +22,7 @@ const API_KEY_VALIDATION_PATH =
   process.env.API_KEY_VALIDATION_PATH || "/internal/mcp/validate-api-key";
 const API_KEY_VALIDATION_CACHE_MS = Number(process.env.API_KEY_VALIDATION_CACHE_MS || 60_000);
 const MCP_INTERNAL_VALIDATION_TOKEN = process.env.MCP_INTERNAL_VALIDATION_TOKEN || "";
-const MCP_VERSION = "4.3.0";
+const MCP_VERSION = "5.0.0";
 
 if (!MCP_INTERNAL_VALIDATION_TOKEN) {
   throw new Error("MCP_INTERNAL_VALIDATION_TOKEN is required");

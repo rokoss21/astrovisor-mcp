@@ -6,7 +6,7 @@ import {
 
 const apiKey = process.env.ASTROVISOR_API_KEY;
 const apiUrl = process.env.ASTROVISOR_URL || "https://astrovisor.io";
-const packageName = process.env.MCP_PACKAGE || "astrovisor-mcp@4.3.0";
+const packageName = process.env.MCP_PACKAGE || "astrovisor-mcp@5.0.0";
 const command = process.env.MCP_COMMAND || "npx";
 const commandArgs = process.env.MCP_ARGS_JSON
   ? JSON.parse(process.env.MCP_ARGS_JSON)

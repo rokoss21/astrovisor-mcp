@@ -1,5 +1,15 @@
 # Changelog
 
+## [5.0.0] - 2026-07-28
+
+- Move the canonical Agent Skill, private profile manager, and skill CLI to
+  [`rokoss21/astrovisor-skill`](https://github.com/rokoss21/astrovisor-skill).
+- Refocus this package and README on MCP transports, tools, request contracts,
+  deployment, and integration.
+- Remove the bundled `astrovisor-skill` binary to give each npm package a single,
+  unambiguous CLI owner. Install `astrovisor-skill@1.0.0` separately.
+- Add reciprocal project links and a documented Skill → MCP → API architecture.
+
 ## [4.3.0] - 2026-07-27
 
 ### Universal AstroVisor skill
