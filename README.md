@@ -1,282 +1,502 @@
-# 🌟 AstroVisor MCP Server (OpenAPI Synced)
+# AstroVisor MCP
 
-AstroVisor MCP server that syncs to the AstroVisor **OpenAPI schema**.
+[![npm version](https://img.shields.io/npm/v/astrovisor-mcp.svg)](https://www.npmjs.com/package/astrovisor-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-339933.svg)](package.json)
 
-That means when the backend adds new systems/endpoints, this MCP server picks them up automatically (no manual tool mapping).
+AstroVisor MCP connects MCP-compatible AI clients to the complete AstroVisor API.
+It supports local stdio and production Streamable HTTP, discovers operations from
+the live OpenAPI document, and returns large calculation results through a compact,
+queryable response layer.
 
-## Install
+This repository is the protocol and server layer. For reusable personal workflows,
+private people profiles, interactive credential setup, and safe AI request
+construction, install the separate
+[AstroVisor Skill](https://github.com/rokoss21/astrovisor-skill).
 
-```bash
-npm install astrovisor-mcp
+```text
+AstroVisor Skill (optional workflow layer)
+    ↓
+AstroVisor MCP (this repository)
+live OpenAPI · authentication · API calls · result retrieval
+    ↓
+AstroVisor API
 ```
 
-## Claude Desktop Config
+## Highlights
 
-Add to `claude_desktop_config.json`:
+- Six compact MCP tools covering 456 current API operations.
+- Live OpenAPI discovery instead of hundreds of hardcoded tool definitions.
+- Stdio support for Claude Desktop, Claude Code, Codex, and other local clients.
+- Authenticated Streamable HTTP at `https://mcp.astrovisor.io/`.
+- Exact `operationId`, path, query, and JSON body serialization.
+- Common core and `birth_*` request-profile normalization.
+- Compact, full, and summary response views with token budgets.
+- Filtering, projection, sorting, pagination, and targeted path retrieval.
+- Temporary result storage isolated by caller API key.
+- Optional full mode with one generated tool per OpenAPI operation.
+
+Capabilities include natal astrology, transits, progressions, solar returns,
+synastry, compatibility, Jyotish, BaZi, Human Design, Gene Keys, numerology,
+Tarot, Lenormand, astrocartography, horary, electional, and every other operation
+published by the live AstroVisor OpenAPI schema.
+
+## Choose your integration
+
+| Need | Recommended setup |
+| --- | --- |
+| Personal assistant with reusable profiles | [AstroVisor Skill](https://github.com/rokoss21/astrovisor-skill) |
+| Cloud or generic MCP client | Remote Streamable HTTP |
+| Claude Desktop or local stdio client | `npx astrovisor-mcp` |
+| Backend/operator deployment | Internal JSON-RPC adapter plus public gateway |
+| Direct Node.js dependency | `npm install astrovisor-mcp` |
+
+Requirements:
+
+- Node.js 20 or newer for local stdio;
+- an AstroVisor dashboard API key beginning with `pk-`;
+- an MCP client supporting stdio or Streamable HTTP.
+
+## Quick start
+
+### Remote Streamable HTTP
+
+Endpoint:
+
+```text
+https://mcp.astrovisor.io/
+```
+
+Authenticate with either:
+
+```http
+Authorization: Bearer pk-...
+```
+
+or:
+
+```http
+X-API-Key: pk-...
+```
+
+The compatibility endpoint `https://mcp.astrovisor.io/mcp` is also available.
+Health:
+
+```text
+https://mcp.astrovisor.io/health
+```
+
+### Local stdio
+
+Run without a global installation:
+
+```bash
+ASTROVISOR_API_KEY="pk-..." \
+npx --yes --package=astrovisor-mcp@5.0.0 -- astrovisor-mcp
+```
+
+Or install globally:
+
+```bash
+npm install --global astrovisor-mcp@5.0.0
+ASTROVISOR_API_KEY="pk-..." astrovisor-mcp
+```
+
+For personal use, prefer the private launcher included in
+[AstroVisor Skill](https://github.com/rokoss21/astrovisor-skill). It avoids putting
+the key in MCP configuration or shell history.
+
+## Client configuration
+
+### Codex and ChatGPT desktop
+
+Remote HTTP using an environment variable:
+
+```toml
+[mcp_servers.astrovisor]
+url = "https://mcp.astrovisor.io/"
+bearer_token_env_var = "ASTROVISOR_API_KEY"
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+```
+
+Codex CLI, the IDE extension, and ChatGPT desktop share Codex MCP configuration on
+the same host. Verify with:
+
+```bash
+codex mcp list
+```
+
+In the interactive client, use `/mcp`.
+
+For profile-aware workflows and generated secret-free configuration, follow the
+[AstroVisor Skill Codex setup](https://github.com/rokoss21/astrovisor-skill#codex-and-chatgpt-desktop).
+
+Official documentation:
+[Codex MCP](https://learn.chatgpt.com/docs/extend/mcp).
+
+### Claude Code
+
+Remote HTTP:
+
+```bash
+claude mcp add --transport http --scope user astrovisor \
+  https://mcp.astrovisor.io/ \
+  --header "Authorization: Bearer pk-..."
+```
+
+Local stdio:
+
+```bash
+claude mcp add --transport stdio --scope user \
+  --env ASTROVISOR_API_KEY=pk-... \
+  astrovisor -- \
+  npx --yes --package=astrovisor-mcp@5.0.0 -- astrovisor-mcp
+```
+
+Verify:
+
+```bash
+claude mcp get astrovisor
+claude mcp list
+```
+
+Remote HTTP is the preferred transport for a cloud-hosted server. For personal
+credentials, the
+[AstroVisor Skill launcher](https://github.com/rokoss21/astrovisor-skill#claude-code)
+keeps the key outside Claude configuration and shell history.
+
+Official documentation:
+[Claude Code MCP](https://code.claude.com/docs/en/mcp).
+
+### Claude Desktop
+
+Direct stdio configuration:
 
 ```json
 {
   "mcpServers": {
     "astrovisor": {
       "command": "npx",
-      "args": ["astrovisor-mcp"],
+      "args": [
+        "--yes",
+        "--package=astrovisor-mcp@5.0.0",
+        "--",
+        "astrovisor-mcp"
+      ],
       "env": {
         "ASTROVISOR_API_KEY": "pk-...",
-        "ASTROVISOR_URL": "https://astrovisor.io"
+        "ASTROVISOR_URL": "https://astrovisor.io",
+        "ASTROVISOR_TOOL_MODE": "compact"
       }
     }
   }
 }
 ```
 
-## Environment Variables
+Restart Claude Desktop after changing `claude_desktop_config.json`.
 
-- `ASTROVISOR_API_KEY` (required): your AstroVisor API key
-- `ASTROVISOR_URL` (optional): API base URL (default: `https://astrovisor.io`)
-- `ASTROVISOR_OPENAPI_URL` (optional): override OpenAPI URL (default: `${ASTROVISOR_URL}/openapi.json`)
-- `ASTROVISOR_TOOL_MODE` (optional): `compact` (default) or `full`
-- `ASTROVISOR_RESPONSE_VIEW` (optional): default response serialization view (`summary`, `compact`, `full`; default `compact`)
-- `ASTROVISOR_DEFAULT_TOKEN_BUDGET` (optional): default max serialized response size in bytes when request does not specify `response.tokenBudget` (default `250000`)
-- `ASTROVISOR_RESULT_TTL_MS` (optional): in-memory result cache TTL (default `1800000`)
-- `ASTROVISOR_RESULT_MAX_ENTRIES` (optional): max cached results (default `128`)
+For a configuration with no embedded API key, use the
+[AstroVisor Skill Claude Desktop setup](https://github.com/rokoss21/astrovisor-skill#claude-desktop).
 
-## Tool Mode
+## Compact toolset
 
-### Compact (default)
+Compact mode is the default. It keeps tool definitions small while preserving
+access to every live API operation.
 
-Claude Desktop has a limited context window. Sending hundreds of tool definitions can cause:
+| Tool | Purpose |
+| --- | --- |
+| `astrovisor_conventions` | Read global request, alias, and response conventions |
+| `astrovisor_openapi_search` | Search operations by intent or keyword |
+| `astrovisor_openapi_list` | List operations by tags, path, method, or page |
+| `astrovisor_openapi_get` | Inspect one canonical operation and request schema |
+| `astrovisor_request` | Execute any operation by `operationId` |
+| `astrovisor_result_get` | Retrieve a stored result or a narrow fragment |
 
-- `Context size exceeds the limit`
-- tool definition validation errors
-
-So the default mode exposes a tiny toolset:
-
-- `astrovisor_openapi_search` (find operationIds)
-- `astrovisor_openapi_list` (get endpoint list with filters/pagination)
-- `astrovisor_openapi_get` (inspect one operation)
-- `astrovisor_conventions` (global interop conventions for any LLM client)
-- `astrovisor_request` (call any operation by operationId with serialization controls)
-- `astrovisor_result_get` (load stored full response by `resultId` and request only needed fragment)
-
-Search also supports common Russian keywords mapping (for example `таро` -> `tarot`, `ленорман` -> `lenormand`).
-
-### Full (advanced)
-
-Set `ASTROVISOR_TOOL_MODE=full` to generate one MCP tool per OpenAPI `operationId`.
-
-Note: this can be too large for Claude Desktop depending on your schema size.
-
-Full mode also accepts legacy aliases in tool calls (for better compatibility with non-Claude clients), for example:
-
-- short operation aliases (`calculate_current_transits`)
-- old verb variants (`create_*` <-> `calculate_*`)
-- names with or without `astrovisor_` prefix
-
-## Calling The API (Compact Mode)
-
-1) Find the operation you want:
-
-```json
-{
-  "q": "gene keys",
-  "limit": 10
-}
-```
-
-Or list all Tarot endpoints directly:
-
-```json
-{
-  "pathPrefix": "/api/tarot",
-  "limit": 200
-}
-```
-
-2) Call it by `operationId`:
-
-```json
-{
-  "operationId": "SomeOperationId",
-  "path": { "paramName": "..." },
-  "query": { "q": "..." },
-  "body": { "any": "json" },
-  "response": {
-    "view": "compact",
-    "responsePath": "data.items",
-    "responseOffset": 0,
-    "responseLimit": 20,
-    "select": ["id", "date", "strength", "system", "theme"],
-    "where": {
-      "strength_gte": 0.75,
-      "theme_contains": "career"
-    },
-    "sort": ["-strength", "date"],
-    "include": ["items", "meta"],
-    "exclude": ["items.0.debug"],
-    "maxItems": 50,
-    "tokenBudget": 120000,
-    "store": true
-  }
-}
-```
-
-- `path`: values for URL templates like `/api/users/{user_id}`
-- `query`: URL query string parameters
-- `body`: JSON request body for `POST/PUT/PATCH` (object preferred; valid JSON string is auto-parsed)
-- body field profiles are auto-normalized across common aliases:
-  - core profile: `datetime/latitude/longitude/location/timezone`
-  - birth profile: `birth_datetime/birth_latitude/birth_longitude/birth_location/birth_timezone`
-- `response`: output shaping for token efficiency
-
-Use `astrovisor_openapi_get` before calling an operation. It now returns:
-
-- `requestBodySchema`
-- `aliases`
-- `llmHints` with:
-  - `requiredBodyFields`
-  - `exampleBody`
-  - quick parameter instructions
-
-Every `astrovisor_request` response includes metadata and, by default, `resultId`.
-Use it to fetch only what you need later:
-
-```json
-{
-  "resultId": "abc123...",
-  "response": {
-    "responsePath": "data.items",
-    "cursor": "eyJvZmZzZXQiOjEwMH0",
-    "responseLimit": 20,
-    "select": ["id", "date", "strength", "system"],
-    "where": { "strength_gte": 0.8 },
-    "sort": "-strength",
-    "view": "compact"
-  }
-}
-```
-
-## Precision Retrieval (Universal For All LLMs)
-
-Large AstroVisor payloads are now handled with a consistent envelope:
-
-- `format`: serialization version marker (`astrovisor.serialized.v2`)
-- `meta.query.totalBefore/totalMatched/offset/limit/nextCursor`
-- `meta.availablePaths`: discoverable paths for targeted follow-up reads
-- `summary.source` + `summary.selected`: shape before/after query shaping
-- `data`: token-optimized result chunk
-
-`response` supports both flat and nested (`response.query`) selectors:
-
-- `responsePath`: select subtree first
-- `select`: field projection
-- `where`: filtering with operator suffixes
-- `sort`: deterministic ordering (`-field` for desc)
-- `cursor` / `responseOffset` / `responseLimit`: pagination
-- `tokenBudget`: auto-compact output under byte budget
-
-Compatibility notes:
-
-- `responsePath/responseOffset/responseLimit` are accepted both at `response.*` and `response.query.*`
-- `where` accepts either:
-  - object form: `{ "tension_score_gte": 19.8 }`
-  - clause array form: `[{"path":"tension_score","op":"gte","value":19.8}]`
-- always check `meta.pathFound`; if `false`, your `responsePath` is wrong.
-
-Supported `where` suffix operators:
-
-- `_eq`, `_ne`, `_gt`, `_gte`, `_lt`, `_lte`
-- `_in`, `_nin`
-- `_contains`, `_startswith`, `_endswith`
-- `_exists`, `_regex`
-
-## Universal LLM Prompt
-
-Use this prompt for any AI client (Claude, ChatGPT, Gemini, Perplexity, etc.) to work with AstroVisor MCP reliably:
+The correct discovery chain is:
 
 ```text
-You are an MCP integration assistant for AstroVisor. Work deterministically, minimize token usage, and never guess endpoint shapes.
+astrovisor_conventions
+    ↓
+astrovisor_openapi_search / astrovisor_openapi_list
+    ↓
+astrovisor_openapi_get
+    ↓
+astrovisor_request
+    ↓
+astrovisor_result_get (when a stored or narrower result is needed)
+```
 
-Goal:
-- Resolve user intent to the correct AstroVisor API operation.
-- Execute calls via MCP reliably.
-- Handle very large responses (especially transits) without context overflow.
+Never guess an operation id or request body. `astrovisor_openapi_get` returns:
 
-Rules:
-1. Always start with tools discovery (tools/list) and adapt to available tools.
-2. If present, call astrovisor_conventions first and follow it.
-3. In compact mode, always resolve operations in this order:
-   - astrovisor_openapi_search or astrovisor_openapi_list
-   - astrovisor_openapi_get
-   - astrovisor_request
-4. Never call an operation before reading astrovisor_openapi_get output.
-5. Build request body from llmHints.requiredBodyFields and llmHints.exampleBody.
-6. Prefer exact required field names. If only alias fields are available, still send them (MCP may normalize), then report normalization.
-7. For large responses, default to compact retrieval:
-   - view: "compact"
-   - store: true
-   - tokenBudget: 12000 (or lower if needed)
-8. For targeted extraction, use:
-   - response.query.responsePath (or responsePath)
-   - query.select
-   - query.where
-   - query.sort
-   - query.limit / query.cursor
-9. Always inspect metadata:
-   - If meta.pathFound=false, stop and retry with a valid path from meta.availablePaths.
-   - If meta.truncated=true, continue via astrovisor_result_get with tighter selectors.
-10. For transit/yearly analytics, do not pull raw full timeline first:
-    - first summary/statistics
-    - then paged timeline windows with filters
-11. If operation/tool name is unknown, retry with aliases from openapi_get.aliases or search/list again.
-12. If an API error occurs, report exact status + message and propose one minimal corrective call.
+- canonical `operationId`;
+- HTTP method and path;
+- path and query parameters;
+- `requestBodySchema`;
+- aliases;
+- required body fields;
+- an LLM-oriented example body.
 
-Default compact call template:
+## Request contract
+
+Call `astrovisor_request` with this outer envelope:
+
+```json
 {
-  "operationId": "<from openapi_get>",
-  "body": { "<required fields only>": "..." },
+  "operationId": "<canonical operation id from astrovisor_openapi_get>",
+  "path": {},
+  "query": {},
+  "body": {},
   "response": {
     "view": "compact",
-    "query": {
-      "responsePath": "<target path>",
-      "select": ["<field1>", "<field2>"],
-      "where": { "<field_op>": "<value>" },
-      "sort": ["-<field>"],
-      "limit": 20
-    },
     "tokenBudget": 12000,
     "store": true
   }
 }
+```
 
-Result follow-up template:
+Rules:
+
+- put URL-template variables only in `path`;
+- put query-string values only in `query`;
+- put the API JSON request only in `body`;
+- preserve booleans, numbers, arrays, and objects as JSON types;
+- do not wrap `body` in `data`, `payload`, or `request` unless the live schema
+  requires it;
+- do not send empty strings as substitutes for required fields;
+- use the live schema when it differs from examples or cached knowledge.
+
+The MCP normalizes common aliases between:
+
+```text
+datetime, latitude, longitude, location, timezone
+```
+
+and:
+
+```text
+birth_datetime, birth_latitude, birth_longitude,
+birth_location, birth_timezone
+```
+
+Normalization is a compatibility feature, not a reason to skip live schema
+inspection.
+
+For a strict personal and multi-person workflow, use the
+[AstroVisor Skill request contract](https://github.com/rokoss21/astrovisor-skill/blob/main/astrovisor/references/request-contract.md).
+
+## Large results and precision retrieval
+
+Every compact response uses the `astrovisor.serialized.v2` envelope and can include:
+
+- `meta.query.totalBefore`, `totalMatched`, `offset`, `limit`, and `nextCursor`;
+- `meta.availablePaths` for discoverable follow-up paths;
+- `meta.pathFound` for path validation;
+- `meta.truncated` when additional retrieval is appropriate;
+- `summary.source` and `summary.selected`;
+- a temporary `resultId`;
+- token-optimized `data`.
+
+Response controls:
+
+| Field | Purpose |
+| --- | --- |
+| `responsePath` | Select a subtree before other processing |
+| `select` | Project specific fields |
+| `where` | Filter using field/operator expressions |
+| `sort` | Apply deterministic ordering |
+| `cursor` | Continue cursor pagination |
+| `responseOffset` / `responseLimit` | Offset pagination |
+| `include` / `exclude` | Keep or omit paths |
+| `maxItems` | Bound large arrays |
+| `tokenBudget` | Bound serialized output |
+| `store` | Keep the full response temporarily |
+
+Example:
+
+```json
 {
-  "resultId": "<meta.resultId>",
+  "operationId": "<operation id>",
+  "body": {
+    "<required field>": "<confirmed value>"
+  },
   "response": {
     "view": "compact",
-    "query": {
-      "responsePath": "<narrower path>",
-      "cursor": "<meta.query.nextCursor>",
-      "select": ["<fields>"],
-      "where": { "<field_op>": "<value>" },
-      "limit": 20
+    "responsePath": "data.items",
+    "select": ["date", "strength", "theme"],
+    "where": {
+      "strength_gte": 0.75
     },
+    "sort": ["-strength", "date"],
+    "responseLimit": 20,
+    "tokenBudget": 12000,
+    "store": true
+  }
+}
+```
+
+Retrieve the next fragment without recalculating:
+
+```json
+{
+  "resultId": "<result id>",
+  "response": {
+    "view": "compact",
+    "responsePath": "data.items",
+    "cursor": "<next cursor>",
+    "select": ["date", "strength", "theme"],
+    "responseLimit": 20,
     "tokenBudget": 12000
   }
 }
-
-Output policy:
-- Be concise and factual.
-- Show what was called, what matched, and why.
-- Never claim "endpoint does not exist" before openapi_list/openapi_search verification.
 ```
 
-## Local Smoke Test
+Supported `where` suffixes:
+
+```text
+_eq _ne _gt _gte _lt _lte
+_in _nin
+_contains _startswith _endswith
+_exists _regex
+```
+
+If `meta.pathFound` is false, select a path from `meta.availablePaths` instead of
+repeating the same request.
+
+## Full tool mode
+
+Set:
+
+```bash
+export ASTROVISOR_TOOL_MODE=full
+```
+
+Full mode creates one MCP tool per OpenAPI `operationId` and accepts several legacy
+operation aliases. It is useful for specialized clients but can consume too much
+context in clients with strict tool-definition limits. Compact mode is recommended
+for general use.
+
+## Environment variables
+
+### Stdio and internal adapter
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `ASTROVISOR_API_KEY` | required | Dashboard API key |
+| `ASTROVISOR_URL` | `https://astrovisor.io` | API base URL |
+| `ASTROVISOR_OPENAPI_URL` | `<ASTROVISOR_URL>/openapi.json` | OpenAPI override |
+| `ASTROVISOR_TOOL_MODE` | `compact` | `compact` or `full` |
+| `ASTROVISOR_RESPONSE_VIEW` | `compact` | Default response view |
+| `ASTROVISOR_DEFAULT_TOKEN_BUDGET` | implementation default | Serialized byte budget |
+| `ASTROVISOR_RESULT_TTL_MS` | `1800000` | Result cache TTL |
+| `ASTROVISOR_RESULT_MAX_ENTRIES` | `128` | Maximum cached results |
+
+### Public gateway
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `MCP_PUBLIC_HTTP_HOST` | `127.0.0.1` | Gateway bind host |
+| `MCP_PUBLIC_HTTP_PORT` | `3002` | Gateway bind port |
+| `INTERNAL_MCP_URL` | `http://127.0.0.1:3001/mcp` | Internal adapter URL |
+| `API_KEY_VALIDATION_PATH` | `/internal/mcp/validate-api-key` | Non-billable key validation endpoint |
+| `API_KEY_VALIDATION_CACHE_MS` | `60000` | Validation cache time |
+| `MCP_INTERNAL_VALIDATION_TOKEN` | required | Internal validation credential |
+
+## Self-hosting
+
+The production topology is:
+
+```text
+Remote MCP client
+    ↓ TLS
+Reverse proxy
+    ↓ loopback
+Public Streamable HTTP gateway
+    ↓ loopback
+Internal JSON-RPC adapter
+    ↓
+AstroVisor API
+```
+
+Build and start the two Node services:
+
+```bash
+npm ci
+npm run build
+npm run start:jsonrpc
+npm run start:public
+```
+
+Operational requirements:
+
+- keep the AstroVisor API, internal adapter, and public gateway on loopback;
+- terminate TLS at a reverse proxy;
+- require `MCP_INTERNAL_VALIDATION_TOKEN` for key validation;
+- ensure key validation does not record billable API usage;
+- apply process supervision, memory limits, and restart policies;
+- never log raw caller API keys or full private request bodies.
+
+## Development
+
+```bash
+git clone https://github.com/rokoss21/astrovisor-mcp.git
+cd astrovisor-mcp
+npm ci
+npm run build
+npm run test:unit
+```
+
+Production OpenAPI smoke test:
 
 ```bash
 ASTROVISOR_URL=https://astrovisor.io npm test
 ```
 
-## Notes
+Stdio end-to-end test:
 
-- The server fetches OpenAPI once at startup and generates the tool list from it.
-- You need a valid **dashboard-generated** API key (`pk-...`) to call most `/api/...` endpoints.
+```bash
+ASTROVISOR_API_KEY=pk-... npm run test:e2e:stdio
+```
+
+Remote end-to-end test:
+
+```bash
+MCP_URL=https://mcp.astrovisor.io/ \
+ASTROVISOR_API_KEY=pk-... \
+npm run test:e2e:remote
+```
+
+Security check:
+
+```bash
+npm audit --omit=dev
+```
+
+## Migration from 4.3.x
+
+AstroVisor Skill now has its own canonical repository and npm package:
+
+- GitHub: [rokoss21/astrovisor-skill](https://github.com/rokoss21/astrovisor-skill)
+- npm: [`astrovisor-skill`](https://www.npmjs.com/package/astrovisor-skill)
+
+Install it directly:
+
+```bash
+npx --yes --package=astrovisor-skill@1.0.0 -- \
+  astrovisor-skill install --target both
+```
+
+Version 5.0.0 removes the bundled `astrovisor-skill` binary. This avoids npm
+binary-name collisions and gives each project a single release lifecycle. Replace
+commands that install the skill through `astrovisor-mcp` with the standalone
+package command above. The MCP tool and transport contracts are unchanged.
+
+## Related projects
+
+- [AstroVisor Skill](https://github.com/rokoss21/astrovisor-skill) — profiles,
+  onboarding, request workflows, and responsible interpretation.
+- [AstroVisor](https://astrovisor.io) — API, dashboard, and product.
+
+## License
+
+[MIT](LICENSE)

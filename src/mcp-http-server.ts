@@ -2,6 +2,7 @@
 import express from "express";
 import cors from "cors";
 import axios from "axios";
+import { createHash } from "crypto";
 import "dotenv/config";
 
 import {
@@ -22,6 +23,7 @@ import { ASTROVISOR_LLM_CONVENTIONS, buildOperationLlmHints, normalizeRequestBod
 import { InMemoryResultStore, parseResponseOptions, serializeForLlm } from "./serialization.js";
 
 const PORT = Number(process.env.MCP_HTTP_PORT || 3001);
+const HOST = process.env.MCP_HTTP_HOST || "127.0.0.1";
 const API_BASE_URL = process.env.ASTROVISOR_URL || process.env.ASTRO_API_BASE_URL || "https://astrovisor.io";
 const OPENAPI_URL = process.env.ASTROVISOR_OPENAPI_URL || `${API_BASE_URL.replace(/\/$/, "")}/openapi.json`;
 const TOOL_MODE = (process.env.ASTROVISOR_TOOL_MODE || "compact").toLowerCase(); // compact|full
@@ -29,7 +31,7 @@ const DEFAULT_RESPONSE_VIEW = process.env.ASTROVISOR_RESPONSE_VIEW || "compact";
 const DEFAULT_TOKEN_BUDGET = Number(process.env.ASTROVISOR_DEFAULT_TOKEN_BUDGET || 250_000);
 const RESULT_TTL_MS = Number(process.env.ASTROVISOR_RESULT_TTL_MS || 30 * 60 * 1000);
 const RESULT_MAX_ENTRIES = Number(process.env.ASTROVISOR_RESULT_MAX_ENTRIES || 128);
-const MCP_VERSION = "4.2.6";
+const MCP_VERSION = "5.0.0";
 
 const app = express();
 app.use(cors());
@@ -54,6 +56,10 @@ function createApiClient(apiKey: string) {
       "X-API-Key": apiKey,
     },
   });
+}
+
+function fingerprintApiKey(apiKey: string): string {
+  return createHash("sha256").update(apiKey).digest("hex").slice(0, 24);
 }
 
 function normalizeBodyInput(rawBody: any): any {
@@ -98,7 +104,27 @@ async function ensureLoaded() {
   return cached;
 }
 
-app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/health", async (_req, res) => {
+  try {
+    const state = await ensureLoaded();
+    return res.json({
+      status: "ok",
+      version: MCP_VERSION,
+      mode: TOOL_MODE,
+      openapi: "ready",
+      operations: state.operations.length,
+      tools: state.tools.length,
+      resultStore: resultStore.stats(),
+    });
+  } catch {
+    return res.status(503).json({
+      status: "unavailable",
+      version: MCP_VERSION,
+      mode: TOOL_MODE,
+      openapi: "unavailable",
+    });
+  }
+});
 
 app.post("/mcp", async (req, res) => {
   const { method, params, id } = req.body || {};
@@ -117,7 +143,7 @@ app.post("/mcp", async (req, res) => {
     }
 
     if (method === "notifications/initialized") {
-      return res.json({ jsonrpc: "2.0", id, result: {} });
+      return res.status(204).end();
     }
 
     if (method === "tools/list") {
@@ -204,10 +230,19 @@ app.post("/mcp", async (req, res) => {
         }
 
         if (toolName === "astrovisor_result_get") {
+          const apiKey = extractApiKey(req);
+          if (!apiKey) {
+            return res.json({
+              jsonrpc: "2.0",
+              id,
+              error: { code: -32602, message: "API key required (Authorization: Bearer or X-API-Key)." },
+            });
+          }
           const resultId = String(args.resultId || "").trim();
           if (!resultId) return res.json({ jsonrpc: "2.0", id, error: { code: -32602, message: "resultId is required" } });
           const item = resultStore.get(resultId);
-          if (!item) {
+          const ownerFingerprint = fingerprintApiKey(apiKey);
+          if (!item || item.context?.ownerFingerprint !== ownerFingerprint) {
             return res.json({
               jsonrpc: "2.0",
               id,
@@ -280,6 +315,7 @@ app.post("/mcp", async (req, res) => {
               path: op.path,
               status: resp.status,
               createdAt: new Date().toISOString(),
+              ownerFingerprint: fingerprintApiKey(apiKey),
             })
           : undefined;
         const envelope = serializeForLlm(resp.data, responseOptions, {
@@ -355,11 +391,17 @@ app.post("/mcp", async (req, res) => {
     return res.json({ jsonrpc: "2.0", id, error: { code: -32601, message: "Method not found" } });
   } catch (e: any) {
     const detail = e?.response?.data ?? e?.message ?? String(e);
-    return res.json({ jsonrpc: "2.0", id, error: { code: -32603, message: typeof detail === "string" ? detail : JSON.stringify(detail) } });
+    const message = typeof detail === "string" ? detail : JSON.stringify(detail);
+    const invalidParams =
+      message.startsWith("body is a string but not valid JSON") ||
+      message.startsWith("Missing path parameter");
+    const upstreamFailure = !!e?.response;
+    const code = invalidParams ? -32602 : upstreamFailure ? -32000 : -32603;
+    return res.json({ jsonrpc: "2.0", id, error: { code, message } });
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, HOST, () => {
   // eslint-disable-next-line no-console
-  console.log(`AstroVisor MCP HTTP (JSON-RPC) Server v${MCP_VERSION} listening on :${PORT} (mode=${TOOL_MODE})`);
+  console.log(`AstroVisor MCP HTTP (JSON-RPC) Server v${MCP_VERSION} listening on http://${HOST}:${PORT} (mode=${TOOL_MODE})`);
 });

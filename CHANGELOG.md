@@ -1,5 +1,72 @@
 # Changelog
 
+## [5.0.0] - 2026-07-28
+
+- Move the canonical Agent Skill, private profile manager, and skill CLI to
+  [`rokoss21/astrovisor-skill`](https://github.com/rokoss21/astrovisor-skill).
+- Refocus this package and README on MCP transports, tools, request contracts,
+  deployment, and integration.
+- Remove the bundled `astrovisor-skill` binary to give each npm package a single,
+  unambiguous CLI owner. Install `astrovisor-skill@1.0.0` separately.
+- Add reciprocal project links and a documented Skill → MCP → API architecture.
+
+## [4.3.0] - 2026-07-27
+
+### Universal AstroVisor skill
+- Added an open Agent Skills-compatible `astrovisor` skill for Codex, ChatGPT
+  desktop, Claude Code and Claude Desktop workflows.
+- Added secure API-key onboarding with a private external env file, masked
+  diagnostics and an optional explicitly requested local `.env`.
+- Added one-Markdown-file-per-person profiles with a maximum-fields template,
+  multiple people, aliases, relationship consent, birth-data provenance,
+  rectification events, preferences, privacy boundaries and progressive
+  enrichment policies.
+- Added deterministic profile validation, name/alias resolution, `core` and
+  `birth_*` request rendering, client configuration generation and a private
+  stdio MCP launcher.
+- Added strict live-OpenAPI request construction rules so agents discover,
+  inspect and validate each operation before calling the API.
+- Added a dependency-free self-test covering credentials, profiles, request
+  payloads, unknown-time safety and Codex/Claude installation.
+- Added `astrovisor-skill` as a second npm binary and included the skill package
+  in the npm release.
+
+## [4.2.7] - 2026-07-27
+
+### Remote MCP
+
+- Added the production Streamable HTTP gateway used by
+  `https://mcp.astrovisor.io/`.
+- Added caller API-key validation through a protected internal endpoint.
+- Added remote SDK E2E coverage for natal, current transits, Tarot and
+  stored-result retrieval.
+
+### Security and Reliability
+
+- Updated the MCP SDK, Axios, Express and related production
+  dependencies; Node.js 20 or newer is now required.
+- Bound HTTP listeners to `127.0.0.1` by default; deployments must opt in
+  to a public bind address.
+- Isolated JSON-RPC result-store entries by API-key fingerprint.
+- Added detailed readiness data to the JSON-RPC health endpoint.
+- Corrected MCP notification and JSON-RPC error handling.
+
+### Interoperability
+
+- Fixed request-profile detection so the common `name` field no longer
+  causes false `mixed` profile hints.
+- Fixed generated examples for timezones, dates, times and datetimes.
+- Added deterministic interop tests and production stdio/remote E2E
+  clients.
+
+### Documentation
+
+- Documented the public root MCP URL, API-key authentication and `/mcp`
+  compatibility alias.
+- Added pinned Claude Desktop configuration to avoid stale global npm
+  binaries.
+- Added remote-gateway architecture, environment and validation guidance.
+
 ## [4.2.6] - 2026-02-16
 
 ### 📘 Documentation
