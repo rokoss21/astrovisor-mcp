@@ -6,7 +6,7 @@ import {
 
 const apiKey = process.env.ASTROVISOR_API_KEY;
 const apiUrl = process.env.ASTROVISOR_URL || "https://astrovisor.io";
-const packageName = process.env.MCP_PACKAGE || "astrovisor-mcp@4.2.7";
+const packageName = process.env.MCP_PACKAGE || "astrovisor-mcp@4.3.0";
 const command = process.env.MCP_COMMAND || "npx";
 const commandArgs = process.env.MCP_ARGS_JSON
   ? JSON.parse(process.env.MCP_ARGS_JSON)
@@ -27,6 +27,12 @@ const transport = new StdioClientTransport({
     ASTROVISOR_TOOL_MODE: "compact",
     ASTROVISOR_RESPONSE_VIEW: "compact",
     ASTROVISOR_DEFAULT_TOKEN_BUDGET: "250000",
+    ...(process.env.ASTROVISOR_SKILL_HOME
+      ? { ASTROVISOR_SKILL_HOME: process.env.ASTROVISOR_SKILL_HOME }
+      : {}),
+    ...(process.env.ASTROVISOR_MCP_PACKAGE
+      ? { ASTROVISOR_MCP_PACKAGE: process.env.ASTROVISOR_MCP_PACKAGE }
+      : {}),
   },
   stderr: "pipe",
 });

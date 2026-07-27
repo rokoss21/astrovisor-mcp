@@ -1,10 +1,11 @@
 {
   "name": "astrovisor-mcp",
-  "version": "4.2.7",
-  "description": "AstroVisor MCP for stdio and Streamable HTTP with live OpenAPI discovery, compact tools and token-efficient results.",
+  "version": "4.3.0",
+  "description": "AstroVisor MCP and universal AI skill with live OpenAPI discovery, private Markdown profiles and token-efficient results.",
   "main": "build/index.js",
   "bin": {
-    "astrovisor-mcp": "build/index.js"
+    "astrovisor-mcp": "build/index.js",
+    "astrovisor-skill": "skills/astrovisor/scripts/astrovisor-skill.mjs"
   },
   "type": "module",
   "scripts": {
@@ -18,7 +19,8 @@
     "test:unit": "npm run build && node test-interop.mjs",
     "test:e2e:stdio": "node test-stdio-client.mjs",
     "test:e2e:remote": "node test-remote-client.mjs",
-    "prepublishOnly": "npm run build"
+    "test:skill": "node skills/astrovisor/scripts/self-test.mjs",
+    "prepublishOnly": "npm run build && node -e \"require('fs').chmodSync('skills/astrovisor/scripts/astrovisor-skill.mjs', '755'); require('fs').chmodSync('skills/astrovisor/scripts/astrovisor-mcp-launcher.mjs', '755')\""
   },
   "keywords": [
     "mcp",
@@ -26,6 +28,8 @@
     "astrology",
     "openapi",
     "claude",
+    "codex",
+    "agent-skill",
     "ai",
     "streamable-http"
   ],
@@ -57,6 +61,7 @@
   },
   "files": [
     "build/",
+    "skills/astrovisor/",
     "README.md",
     "LICENSE"
   ]

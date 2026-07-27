@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.3.0] - 2026-07-27
+
+### Universal AstroVisor skill
+- Added an open Agent Skills-compatible `astrovisor` skill for Codex, ChatGPT
+  desktop, Claude Code and Claude Desktop workflows.
+- Added secure API-key onboarding with a private external env file, masked
+  diagnostics and an optional explicitly requested local `.env`.
+- Added one-Markdown-file-per-person profiles with a maximum-fields template,
+  multiple people, aliases, relationship consent, birth-data provenance,
+  rectification events, preferences, privacy boundaries and progressive
+  enrichment policies.
+- Added deterministic profile validation, name/alias resolution, `core` and
+  `birth_*` request rendering, client configuration generation and a private
+  stdio MCP launcher.
+- Added strict live-OpenAPI request construction rules so agents discover,
+  inspect and validate each operation before calling the API.
+- Added a dependency-free self-test covering credentials, profiles, request
+  payloads, unknown-time safety and Codex/Claude installation.
+- Added `astrovisor-skill` as a second npm binary and included the skill package
+  in the npm release.
+
 ## [4.2.7] - 2026-07-27
 
 ### Remote MCP

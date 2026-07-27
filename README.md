@@ -1,38 +1,488 @@
-# AstroVisor MCP
+# AstroVisor MCP + Universal AI Skill
 
-AstroVisor MCP connects AI clients to the complete AstroVisor
-calculation API. It synchronizes tools from the live OpenAPI schema,
-so new astrology systems and endpoints become discoverable without a
-manual tool release.
+AstroVisor connects AI clients to the complete AstroVisor calculation API.
+Version 4.3.0 includes:
 
-Version 4.2.7 supports two production-tested transports:
+- the `astrovisor-mcp` server for stdio and Streamable HTTP;
+- the universal `astrovisor` Agent Skill for Codex, ChatGPT desktop and Claude
+  Code;
+- private Markdown profiles for yourself and any number of other people;
+- interactive API-key/profile onboarding and progressive profile enrichment;
+- strict live-OpenAPI request construction so the AI uses the correct operation,
+  fields, JSON types and response controls.
 
-- local stdio through the `astrovisor-mcp` npm package;
-- remote MCP over Streamable HTTP at `https://mcp.astrovisor.io/`.
+The MCP exposes six compact tools backed by 456 current API operations. New
+operations are discovered from the live OpenAPI schema instead of being hardcoded
+into the skill.
 
-Both expose the same six compact tools backed by 456 current API
-operations.
+## Capabilities
 
-## What It Provides
+- Natal charts, transits, progressions, solar returns and directions.
+- Synastry, compatibility, relationship and multi-person calculations.
+- Jyotish, BaZi, Human Design, Gene Keys, numerology and Matrix systems.
+- Tarot, Lenormand and other documented divination endpoints.
+- Astrocartography, local space, parans, horary and electional workflows.
+- Live OpenAPI search and exact operation metadata.
+- Automatic normalization between common core and `birth_*` request profiles.
+- Token-budgeted response filtering, projection and pagination.
+- Temporary result storage for narrow follow-up retrieval.
+- Per-API-key result isolation on the remote MCP gateway.
 
-- Live OpenAPI discovery with search, filtering and operation metadata.
-- Compact mode with six stable tools instead of hundreds of definitions.
-- Natal, transit, Tarot and every other documented AstroVisor operation.
-- Automatic normalization between core and `birth_*` request profiles.
-- Correct date, time, datetime and timezone examples for AI clients.
-- Token-budgeted serialization, filtering, projection and pagination.
-- Temporary result storage for precise follow-up reads.
-- Per-API-key isolation for stored results in HTTP deployments.
-- Standard Streamable HTTP transport for remote MCP clients.
+## Requirements
 
-## Get an API Key
+- Node.js 20 or newer.
+- An AstroVisor dashboard API key beginning with `pk-`.
+- One of the supported clients, or any MCP client supporting stdio/Streamable
+  HTTP.
 
-Create a key in the AstroVisor dashboard. User keys begin with `pk-`.
-Never put a real key in source control.
+Never commit a real API key or private profile.
 
-## Claude Desktop: Local stdio
+## Quick Start: Install the Skill
 
-Add the following to `claude_desktop_config.json`:
+Install the same skill for both Codex/ChatGPT desktop and Claude Code:
+
+```bash
+npx --yes --package=astrovisor-mcp@4.3.0 -- \
+  astrovisor-skill install --target both
+```
+
+This copies the skill to:
+
+- `~/.agents/skills/astrovisor` for Codex and ChatGPT desktop;
+- `~/.claude/skills/astrovisor` for Claude Code.
+
+The two installed copies share one private configuration/profile directory. To
+install only one:
+
+```bash
+# Codex / ChatGPT desktop
+npx --yes --package=astrovisor-mcp@4.3.0 -- \
+  astrovisor-skill install --target codex
+
+# Claude Code
+npx --yes --package=astrovisor-mcp@4.3.0 -- \
+  astrovisor-skill install --target claude
+```
+
+For project-scoped installation:
+
+```bash
+npx --yes --package=astrovisor-mcp@4.3.0 -- \
+  astrovisor-skill install --target both --scope project \
+  --project-dir /path/to/project
+```
+
+Project paths are `.agents/skills/astrovisor` and
+`.claude/skills/astrovisor`. Use user scope for a personal assistant available
+from every repository; use project scope for a team/project workflow.
+
+### Install from Git
+
+```bash
+git clone https://github.com/rokoss21/astrovisor-mcp.git
+cd astrovisor-mcp
+node skills/astrovisor/scripts/astrovisor-skill.mjs \
+  install --target both
+```
+
+### Optional global CLI
+
+```bash
+npm install --global astrovisor-mcp@4.3.0
+astrovisor-skill --help
+astrovisor-mcp
+```
+
+The npm package contains both binaries:
+
+- `astrovisor-mcp`: MCP stdio server;
+- `astrovisor-skill`: skill/profile/configuration manager.
+
+## Configure the API Key
+
+The recommended command prompts without echoing the key:
+
+```bash
+node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  config set-key
+```
+
+Claude-only installation:
+
+```bash
+node "$HOME/.claude/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  config set-key
+```
+
+The default private file is:
+
+```text
+macOS/Linux: ~/.config/astrovisor/skill.env
+Windows:     %APPDATA%\AstroVisor\skill.env
+```
+
+It is created with private permissions where supported. Generated MCP client
+configuration uses a launcher and does not contain the key.
+
+### Let the AI ask for credentials
+
+When the skill is invoked and no key is configured, the AI is instructed to:
+
+1. explain that a dashboard key beginning with `pk-` is needed;
+2. ask whether the user wants to supply it for the current process or save it;
+3. use the hidden interactive command above whenever possible;
+4. if explicitly authorized to store a supplied key, pass it to
+   `config set-key --stdin` without echoing it;
+5. mask the key in diagnostics and never place it in profiles or Git.
+
+For maximum security, enter the key yourself in the hidden terminal prompt instead
+of pasting it into a chat.
+
+### Other credential modes
+
+Runtime environment variable (highest precedence):
+
+```bash
+export ASTROVISOR_API_KEY="pk-..."
+```
+
+Custom private env file:
+
+```bash
+export ASTROVISOR_SKILL_ENV="/private/path/astrovisor.env"
+```
+
+Explicit local skill `.env` (supported but less portable):
+
+```bash
+node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  config set-key --storage local
+```
+
+Local `.env` is gitignored, but it belongs to one installed copy and may be lost
+during replacement. The external private file is the recommended default.
+
+Configuration precedence:
+
+1. process environment;
+2. `ASTROVISOR_SKILL_ENV`;
+3. private `skill.env`;
+4. installed skill `.env`;
+5. safe defaults.
+
+Inspect configuration without revealing the key:
+
+```bash
+node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  config status --json
+```
+
+## Markdown People Profiles
+
+The skill stores one person per Markdown file. The default directory is:
+
+```text
+~/.config/astrovisor/profiles/
+```
+
+Find the actual configured path:
+
+```bash
+node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  profile path --json
+```
+
+Each file contains flat YAML frontmatter for machine-safe fields and ordinary
+Markdown sections for evolving personal context. The maximum-fields template is
+at [`skills/astrovisor/assets/profile-template.md`](skills/astrovisor/assets/profile-template.md).
+
+It supports:
+
+- display, preferred, legal, birth and numerology names;
+- aliases, pronouns, language, relationship and related profile ids;
+- birth date/time, time accuracy or range, place, coordinates and IANA timezone;
+- source/confidence, birth-certificate state and rectification candidates;
+- current location/timezone separately from birthplace;
+- tropical/sidereal, house system, ayanamsa and system preferences;
+- Tarot deck, forecast horizon, interpretation language/depth/tone;
+- goals, focus areas, sensitive/avoided topics and privacy boundaries;
+- consent for persistence, relationship comparison and rectification;
+- work, education, family, health context, relationships and worldview;
+- important dated life events;
+- prior calculation notes, candidate facts and an update log.
+
+The existence of a field does not mean it must be filled. The AI collects only
+information relevant to the current request and progressively enriches the profile
+with approved data.
+
+### Create your own profile
+
+Interactive essential-data wizard:
+
+```bash
+node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  profile create me --interactive --default
+```
+
+Create an empty maximum-fields template for later AI/manual editing:
+
+```bash
+node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  profile create me --default
+```
+
+### Create profiles for other people
+
+Use stable lowercase ids:
+
+```bash
+node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  profile create partner --interactive
+
+node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  profile create child-anna
+
+node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  profile create client-ivan
+```
+
+Manual files can be placed directly into the profile directory or imported:
+
+```bash
+node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  profile import /path/to/person.md
+```
+
+### List, resolve, inspect and validate
+
+```bash
+SKILL="$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs"
+
+node "$SKILL" profile list --json
+node "$SKILL" profile resolve "Anna" --json
+node "$SKILL" profile show partner --json
+node "$SKILL" profile validate partner --json
+```
+
+List/resolve output intentionally contains metadata rather than every birth field.
+The AI loads the full selected profile only when the task needs it.
+
+### Deterministic profile updates
+
+```bash
+node "$SKILL" profile set me \
+  --set 'birth_time_accuracy=exact' \
+  --set 'focus_areas=["career","relationships"]' \
+  --set 'interpretation_language=ru'
+```
+
+Narrative sections and life-event tables can be edited as Markdown. Keep
+user-confirmed facts separate from AI-derived observations.
+
+### Progressive AI enrichment
+
+Configure the global policy:
+
+```bash
+node "$SKILL" config set \
+  --set ASTROVISOR_PROFILE_UPDATE_POLICY=ask
+```
+
+Policies:
+
+- `ask` (default): the AI shows exact proposed changes and waits for confirmation;
+- `auto-explicit`: explicitly stated, unambiguous facts are saved automatically and
+  reported afterward;
+- `off`: no profile writes.
+
+A profile can override the global policy with `profile_update_policy`.
+
+The AI must never silently convert an inference into a confirmed fact. With
+permission, uncertain facts go to “Candidate facts awaiting confirmation”. This
+allows the profile to grow during normal conversations without contaminating
+calculation inputs.
+
+## Correct API Request Construction
+
+The skill does not hardcode or guess API request shapes. For every new calculation
+type, the AI must:
+
+1. call `astrovisor_openapi_search` or `astrovisor_openapi_list`;
+2. choose the relevant operation;
+3. call `astrovisor_openapi_get`;
+4. read the canonical `operationId`, parameters, `requestBodySchema`,
+   `llmHints.requiredBodyFields` and `llmHints.exampleBody`;
+5. load and validate only the selected profile(s);
+6. map confirmed profile values into the exact `path`, `query` and `body` fields;
+7. check every required field and ask for missing information;
+8. call `astrovisor_request`;
+9. use `astrovisor_result_get` for targeted follow-up retrieval.
+
+The profile manager can render the two common birth-data seeds:
+
+```bash
+node "$SKILL" profile render me --format core
+node "$SKILL" profile render me --format birth
+```
+
+Core output:
+
+```json
+{
+  "name": "Emil",
+  "datetime": "1990-05-15T14:30:00",
+  "latitude": 53.9006,
+  "longitude": 27.559,
+  "location": "Minsk, Belarus",
+  "timezone": "Europe/Minsk"
+}
+```
+
+Birth output uses `birth_datetime`, `birth_latitude`, `birth_longitude`,
+`birth_location` and `birth_timezone`. These are schema seeds, not replacements
+for live `astrovisor_openapi_get` metadata.
+
+For multiple people, the AI renders and validates every profile independently and
+maps them into the exact schema (`person1/person2`, nested birth data or whatever
+the selected live operation defines). It never merges two profiles or reuses one
+person's coordinates for another.
+
+Unknown birth time remains empty with `birth_time_accuracy: "unknown"`. The skill
+never silently substitutes noon.
+
+## Codex and ChatGPT Desktop Setup
+
+Codex loads personal skills from `~/.agents/skills`; repository skills live in
+`.agents/skills`. Codex CLI, the IDE extension and ChatGPT desktop share Codex MCP
+configuration.
+
+1. Install the skill:
+
+   ```bash
+   npx --yes --package=astrovisor-mcp@4.3.0 -- \
+     astrovisor-skill install --target codex
+   ```
+
+2. Save the key:
+
+   ```bash
+   node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+     config set-key
+   ```
+
+3. Generate the exact MCP configuration:
+
+   ```bash
+   node "$HOME/.agents/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+     client-config codex
+   ```
+
+4. Paste it into `~/.codex/config.toml`. It looks like:
+
+   ```toml
+   [mcp_servers.astrovisor]
+   command = "node"
+   args = ["/absolute/path/to/astrovisor/scripts/astrovisor-mcp-launcher.mjs"]
+   startup_timeout_sec = 30
+   tool_timeout_sec = 120
+   ```
+
+5. Restart Codex/ChatGPT desktop if the new MCP server does not appear. Use `/mcp`
+   to inspect servers. Invoke the skill explicitly with `$astrovisor`, or ask a
+   matching astrology/profile question and allow implicit activation.
+
+Codex can also use remote HTTP if the key is exported into the Codex host:
+
+```toml
+[mcp_servers.astrovisor]
+url = "https://mcp.astrovisor.io/"
+bearer_token_env_var = "ASTROVISOR_API_KEY"
+```
+
+Official references: [Codex skills](https://learn.chatgpt.com/docs/build-skills),
+[Codex MCP](https://learn.chatgpt.com/docs/extend/mcp).
+
+## Claude Code Setup
+
+Claude Code discovers personal skills in `~/.claude/skills` and project skills in
+`.claude/skills`.
+
+1. Install the skill:
+
+   ```bash
+   npx --yes --package=astrovisor-mcp@4.3.0 -- \
+     astrovisor-skill install --target claude
+   ```
+
+2. Save the key using the installed CLI.
+
+3. Generate the MCP command:
+
+   ```bash
+   node "$HOME/.claude/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+     client-config claude-code
+   ```
+
+4. Run the emitted command. It will use this structure:
+
+   ```bash
+   claude mcp add --transport stdio --scope user astrovisor -- \
+     node /absolute/path/to/astrovisor/scripts/astrovisor-mcp-launcher.mjs
+   ```
+
+5. Verify:
+
+   ```bash
+   claude mcp get astrovisor
+   claude mcp list
+   ```
+
+6. Inside Claude Code, use `/mcp` to inspect the connection and `/astrovisor` to
+   invoke the skill.
+
+Direct remote HTTP is also possible, but putting a key directly into a CLI command
+can leave it in shell history:
+
+```bash
+claude mcp add --transport http --scope user astrovisor \
+  https://mcp.astrovisor.io/ \
+  --header "Authorization: Bearer pk-..."
+```
+
+The private stdio launcher is therefore recommended.
+
+Official references: [Claude Code skills](https://code.claude.com/docs/en/slash-commands),
+[Claude Code MCP](https://code.claude.com/docs/en/mcp).
+
+## Claude Desktop Setup
+
+Claude Desktop can use the MCP server through stdio. Local Claude Code skill
+discovery and Claude Desktop MCP configuration are separate features.
+
+Generate `claude_desktop_config.json` content:
+
+```bash
+node "$HOME/.claude/skills/astrovisor/scripts/astrovisor-skill.mjs" \
+  client-config claude-desktop
+```
+
+The output contains no API key:
+
+```json
+{
+  "mcpServers": {
+    "astrovisor": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/astrovisor/scripts/astrovisor-mcp-launcher.mjs"
+      ]
+    }
+  }
+}
+```
+
+Restart Claude Desktop after editing the configuration. If you only want MCP and
+not the Claude Code skill, use the original direct package configuration:
 
 ```json
 {
@@ -41,7 +491,7 @@ Add the following to `claude_desktop_config.json`:
       "command": "npx",
       "args": [
         "--yes",
-        "--package=astrovisor-mcp@4.2.7",
+        "--package=astrovisor-mcp@4.3.0",
         "--",
         "astrovisor-mcp"
       ],
@@ -55,47 +505,151 @@ Add the following to `claude_desktop_config.json`:
 }
 ```
 
-The explicit package pin prevents an older globally installed binary
-from taking precedence. Restart Claude Desktop after changing the
-configuration.
+The explicit package pin and neutral launcher working directory prevent an old
+global `astrovisor-mcp` binary from taking precedence.
+
+Official reference:
+[Claude Desktop local MCP](https://support.anthropic.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop).
+
+## Example Skill Prompts
+
+Codex:
+
+```text
+Use $astrovisor. Check whether my profile is complete, ask only for missing natal
+data, save confirmed values, and calculate my natal chart.
+```
+
+Claude Code:
+
+```text
+/astrovisor Create separate profiles for me and my partner, resolve both birth
+locations, then run the correct synastry operation with a relationships focus.
+```
+
+Progressive enrichment:
+
+```text
+Use AstroVisor. During our conversation, keep my profile updated with facts I state
+explicitly. Ask before saving sensitive or inferred information.
+```
+
+Unknown birth time:
+
+```text
+Use AstroVisor for Anna. Her date and place are known but the time is unknown. Save
+that honestly, explain limitations, and choose calculations that do not pretend the
+time is exact.
+```
+
+Multi-profile:
+
+```text
+Compare profiles me, partner and business-cofounder. Verify consent and data
+completeness for each person, discover the live group/relationship operations, and
+show which request shape you used.
+```
+
+Russian:
+
+```text
+Используй AstroVisor. Создай отдельный профиль для мамы, задай только необходимые
+вопросы, сохрани подтверждённые данные и сделай прогноз на ближайшие три месяца.
+```
+
+## Diagnostics and Testing
+
+Full local/remote diagnostic:
+
+```bash
+node "$SKILL" doctor --json
+```
+
+It checks:
+
+- Node.js version;
+- private configuration and masked key;
+- every Markdown profile's syntax and core-field validity;
+- public MCP health;
+- authenticated MCP initialization;
+- compact tool count.
+
+It does not bill an astrology calculation.
+
+Skill self-test:
+
+```bash
+npm run test:skill
+```
+
+MCP tests:
+
+```bash
+ASTROVISOR_URL=https://astrovisor.io npm test
+npm run test:unit
+ASTROVISOR_API_KEY=pk-... npm run test:e2e:stdio
+MCP_URL=https://mcp.astrovisor.io/ \
+ASTROVISOR_API_KEY=pk-... \
+npm run test:e2e:remote
+```
+
+## Update the Installed Skill
+
+Run the installer with `--force`:
+
+```bash
+npx --yes --package=astrovisor-mcp@4.3.0 -- \
+  astrovisor-skill install --target both --force
+```
+
+Existing skill folders are renamed to timestamped recoverable backups before
+replacement. Private default profiles and `skill.env` live outside the installed
+skill, so they are not overwritten.
+
+## Privacy and Safety
+
+- Profiles contain personal data; keep them private and out of Git.
+- Store one person per file and use explicit consent for third-party comparison.
+- Never infer birth time, gender, coordinates, timezone or legal name.
+- Keep AI-derived observations separate from confirmed facts.
+- Do not store API keys in profiles.
+- Astrology/divination interpretations are reflective, not scientific certainty.
+- Do not use results as medical, legal, financial, safety or mental-health advice.
+- Do not make deterministic claims about death, illness, pregnancy, crime,
+  fidelity or another person's hidden intentions.
 
 ## Remote Streamable HTTP
 
-Clients that support static HTTP authentication can connect without
-installing npm:
+Clients supporting static HTTP authentication can connect without npm:
 
 ```text
 MCP URL: https://mcp.astrovisor.io/
 Authorization: Bearer pk-...
 ```
 
-`X-API-Key: pk-...` is also accepted. The former
-`https://mcp.astrovisor.io/mcp` address remains available as a
-compatibility alias. Health information is published at
+`X-API-Key: pk-...` is also accepted. The compatibility alias
+`https://mcp.astrovisor.io/mcp` remains available. Health information:
 `https://mcp.astrovisor.io/health`.
-
-Claude's account-level custom remote connectors use OAuth rather than an
-arbitrary static `Authorization` header. Use the stdio configuration
-above for Claude Desktop API-key authentication.
 
 ## Install as a Dependency
 
-Node.js 20 or newer is required.
-
 ```bash
-npm install astrovisor-mcp@4.2.7
+npm install astrovisor-mcp@4.3.0
 ```
 
-## Client Environment Variables
+## MCP Client Environment Variables
 
-- `ASTROVISOR_API_KEY` (required): your AstroVisor API key
-- `ASTROVISOR_URL` (optional): API base URL (default: `https://astrovisor.io`)
-- `ASTROVISOR_OPENAPI_URL` (optional): override OpenAPI URL (default: `${ASTROVISOR_URL}/openapi.json`)
-- `ASTROVISOR_TOOL_MODE` (optional): `compact` (default) or `full`
-- `ASTROVISOR_RESPONSE_VIEW` (optional): default response serialization view (`summary`, `compact`, `full`; default `compact`)
-- `ASTROVISOR_DEFAULT_TOKEN_BUDGET` (optional): default max serialized response size in bytes when request does not specify `response.tokenBudget` (default `250000`)
-- `ASTROVISOR_RESULT_TTL_MS` (optional): in-memory result cache TTL (default `1800000`)
-- `ASTROVISOR_RESULT_MAX_ENTRIES` (optional): max cached results (default `128`)
+- `ASTROVISOR_API_KEY` (required): dashboard API key.
+- `ASTROVISOR_URL` (default `https://astrovisor.io`): API base URL.
+- `ASTROVISOR_OPENAPI_URL`: optional OpenAPI override.
+- `ASTROVISOR_TOOL_MODE`: `compact` (default) or `full`.
+- `ASTROVISOR_RESPONSE_VIEW`: `summary`, `compact`, or `full`.
+- `ASTROVISOR_DEFAULT_TOKEN_BUDGET`: serialized response byte budget.
+- `ASTROVISOR_RESULT_TTL_MS`: result cache TTL.
+- `ASTROVISOR_RESULT_MAX_ENTRIES`: maximum cached results.
+
+Skill-specific variables are documented in
+[`skills/astrovisor/assets/skill.env.example`](skills/astrovisor/assets/skill.env.example).
 
 ## Self-Hosting the Remote Gateway
 

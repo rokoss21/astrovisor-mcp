@@ -1,0 +1,15 @@
+interface:
+  display_name: "AstroVisor"
+  short_description: "Personal astrology via AstroVisor MCP"
+  default_prompt: "Use $astrovisor to set up my profile and run the right AstroVisor calculation."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "astrovisor"
+      description: "AstroVisor calculations and live OpenAPI discovery"
+      transport: "streamable_http"
+      url: "https://mcp.astrovisor.io/"
+
+policy:
+  allow_implicit_invocation: true
